@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  price         Int
+  discountPrice Int?
+  imageUrls     String
+  badges        String   @default("[]")
+  color         String
+  category      String
+  stockS        Int      @default(0)
+  stockM        Int      @default(0)
+  stockL        Int      @default(0)
+  stockXL       Int      @default(0)
+  isVisible     Boolean  @default(true)
+  rating        Float    @default(4.5)
+  reviewCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+model SiteSettings {
+  id          String @id
+  bgPrimary   String
+  accentColor String
+  bannerBg    String
+  bannerText  String
+}
