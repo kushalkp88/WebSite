@@ -42,11 +42,11 @@ export function CategoryPills() {
             onClick={() => handleSelect(item)}
             className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
               isActive
-                ? "bg-white text-black shadow-lg shadow-white/10 scale-105"
-                : "border border-white/15 bg-zinc-900/80 text-zinc-300 hover:border-white/40 hover:text-white"
+                ? "bg-zinc-900 text-white font-black shadow-2xs scale-105"
+                : "border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 shadow-2xs"
             }`}
           >
-            <Icon className={`w-3.5 h-3.5 ${isActive ? "text-black" : "text-zinc-400"}`} />
+            <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-zinc-500"}`} />
             <span>{item.label}</span>
           </button>
         );

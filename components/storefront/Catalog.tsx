@@ -83,25 +83,25 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       </div>
 
       {/* Catalog Title & Controls Bar */}
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-            <span>INKDROP</span>
+          <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-zinc-400 uppercase">
+            <span>VEIRDO</span>
             <span>/</span>
-            <span style={{ color: "var(--accent-color)" }}>CURATED DROPS</span>
+            <span className="text-emerald-600 font-black">MEN&apos;S T-SHIRTS</span>
           </div>
-          <h2 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-white">
-            THE PRINT DROP
+          <h2 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 uppercase">
+            MEN&apos;S T-SHIRTS & OVERSIZED DROPS
           </h2>
           {search && (
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs text-zinc-400">
-                Searching for: &ldquo;<strong className="text-white">{search}</strong>&rdquo;
+              <span className="text-xs text-zinc-600">
+                Searching for: &ldquo;<strong className="text-zinc-900">{search}</strong>&rdquo;
               </span>
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                className="text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1"
               >
                 <X className="w-3 h-3" /> Clear
               </button>
@@ -112,7 +112,7 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
         <button
           type="button"
           onClick={() => setShowFilters((v) => !v)}
-          className="flex items-center gap-2.5 rounded-full border border-white/20 bg-zinc-900/90 px-5 py-2.5 text-xs font-bold tracking-wider text-white uppercase transition-all hover:bg-white hover:text-black cursor-pointer shadow-md"
+          className="flex items-center gap-2.5 rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-xs font-bold tracking-wider text-zinc-900 uppercase transition-all hover:bg-zinc-900 hover:text-white cursor-pointer shadow-2xs"
         >
           <SlidersHorizontal size={14} />
           <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
@@ -123,7 +123,7 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       <div className={`gap-8 ${showFilters ? "lg:flex" : ""}`}>
         {showFilters && (
           <aside className="mb-8 w-full shrink-0 lg:mb-0 lg:w-64">
-            <div className="sticky top-28 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 backdrop-blur-md">
+            <div className="sticky top-28">
               <FilterSidebar
                 products={products}
                 filters={filters}

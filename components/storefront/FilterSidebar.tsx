@@ -53,26 +53,26 @@ export function FilterSidebar({
   }
 
   return (
-    <aside className="space-y-6 text-sm">
+    <aside className="space-y-6 text-sm bg-white border border-zinc-200 rounded-2xl p-4 shadow-2xs">
       {/* Header with reset */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <span className="text-xs font-black uppercase tracking-widest text-white">
-          Filter Drops
+      <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+        <span className="text-xs font-black uppercase tracking-widest text-zinc-900">
+          Filters
         </span>
         {totalActive > 0 && (
           <button
             type="button"
             onClick={resetAll}
-            className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:underline cursor-pointer"
+            className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:underline cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset ({totalActive})
+            Clear ({totalActive})
           </button>
         )}
       </div>
 
       {/* Size Pills */}
-      <FilterGroup title="Sizes Available">
+      <FilterGroup title="Size">
         <div className="flex flex-wrap gap-2">
           {SIZES.map((size) => {
             const active = filters.sizes.includes(size);
@@ -81,10 +81,10 @@ export function FilterSidebar({
                 key={size}
                 type="button"
                 onClick={() => toggle("sizes", size)}
-                className={`min-w-10 py-1.5 px-3 rounded-lg text-xs font-black transition-all border cursor-pointer ${
+                className={`min-w-10 py-1.5 px-3 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
                   active
-                    ? "bg-white text-black border-white shadow-md"
-                    : "bg-zinc-950 border-white/15 text-zinc-400 hover:border-white/40 hover:text-white"
+                    ? "bg-zinc-900 text-white border-zinc-900 shadow-2xs"
+                    : "bg-white border-zinc-300 text-zinc-700 hover:border-zinc-500 hover:text-zinc-900"
                 }`}
               >
                 {size}
@@ -97,9 +97,9 @@ export function FilterSidebar({
       {/* Price Range Slider */}
       <FilterGroup title="Max Price">
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-white">
-            <span className="text-zinc-500">₹0</span>
-            <span style={{ color: "var(--accent-color)" }}>
+          <div className="flex items-center justify-between text-xs font-bold text-zinc-900">
+            <span className="text-zinc-400">₹0</span>
+            <span className="text-emerald-600 font-black">
               {formatInr(filters.maxPrice)}
             </span>
           </div>
@@ -112,13 +112,13 @@ export function FilterSidebar({
             onChange={(e) =>
               onChange({ ...filters, maxPrice: Number(e.target.value) })
             }
-            className="w-full accent-amber-400 cursor-pointer"
+            className="w-full accent-emerald-600 cursor-pointer"
           />
         </div>
       </FilterGroup>
 
-      {/* Categories */}
-      <FilterGroup title="Categories">
+      {/* Categories / Fabric */}
+      <FilterGroup title="Category & Fit">
         <div className="space-y-1.5">
           {categories.map((cat) => {
             const checked = filters.categories.includes(cat);
@@ -126,18 +126,18 @@ export function FilterSidebar({
             return (
               <label
                 key={cat}
-                className="flex cursor-pointer items-center justify-between py-1 px-2 rounded-lg hover:bg-white/5 text-xs text-zinc-300 hover:text-white transition-colors"
+                className="flex cursor-pointer items-center justify-between py-1 px-1.5 rounded-lg hover:bg-zinc-50 text-xs text-zinc-700 hover:text-zinc-900 transition-colors"
               >
                 <span className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggle("categories", cat)}
-                    className="rounded accent-amber-400 cursor-pointer"
+                    className="rounded accent-emerald-600 cursor-pointer w-3.5 h-3.5"
                   />
-                  <span>{cat}</span>
+                  <span className="font-medium">{cat}</span>
                 </span>
-                <span className="text-[10px] text-zinc-500 font-mono">({count})</span>
+                <span className="text-[10px] text-zinc-400 font-mono">({count})</span>
               </label>
             );
           })}
@@ -154,10 +154,10 @@ export function FilterSidebar({
                 key={color}
                 type="button"
                 onClick={() => toggle("colors", color)}
-                className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
                   active
-                    ? "bg-amber-400 text-black border-amber-400 font-bold"
-                    : "bg-zinc-950 border-white/10 text-zinc-400 hover:border-white/30 hover:text-white"
+                    ? "bg-emerald-600 text-white border-emerald-600 font-bold"
+                    : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900"
                 }`}
               >
                 {active && "✓ "}
@@ -180,8 +180,8 @@ function FilterGroup({
 }) {
   return (
     <div className="space-y-2.5">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-        {title}
+      <h3 className="text-xs font-bold text-zinc-900 flex items-center justify-between">
+        <span>{title}</span>
       </h3>
       {children}
     </div>

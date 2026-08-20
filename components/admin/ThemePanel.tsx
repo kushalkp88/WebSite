@@ -10,13 +10,13 @@ import { broadcastTheme, DEFAULT_THEME, type ThemePayload } from "@/lib/theme";
 
 const THEME_PRESETS: { name: string; desc: string; theme: ThemePayload }[] = [
   {
-    name: "Inkdrop Dark / Acid Yellow (Default)",
-    desc: "Signature dark cyberpunk streetwear aesthetic",
+    name: "Veirdo White / Clean Fashion (Default)",
+    desc: "Clean white storefront aesthetic with emerald accents matching Veirdo.in",
     theme: {
-      bgPrimary: "#0a0a0a",
-      accentColor: "#f5e642",
-      bannerBg: "#1d4ed8",
-      bannerText: "LIMITED QUANTITY DROP • FREE SHIPPING ACROSS INDIA OVER ₹999 • COD AVAILABLE",
+      bgPrimary: "#ffffff",
+      accentColor: "#16a34a",
+      bannerBg: "#ffffff",
+      bannerText: "⚡ FREE SHIPPING ON ORDERS ABOVE ₹999 • 100% COTTON OVERSIZED TEES • BUY ANY 2 @ ₹1099",
     },
   },
   {

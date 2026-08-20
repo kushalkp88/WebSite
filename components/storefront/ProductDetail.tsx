@@ -72,31 +72,28 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid gap-12 lg:grid-cols-12">
-        {/* Left Gallery: 7 cols */}
+        {/* Left Gallery: 7 cols (Veirdo Model Portrait 3:4 Aspect Ratio) */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Main Large Image */}
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl">
+          {/* Main Large Model Image */}
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-200 shadow-sm">
             <ProductImage
               src={product.imageUrls[activeImg] ?? product.imageUrls[0]}
               alt={product.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
             />
 
-            {/* Badges */}
+            {/* Floating Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
               {product.badges.map((b) => (
                 <span
                   key={b}
-                  className="bg-black/90 text-amber-300 border border-amber-400/30 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg shadow-lg backdrop-blur-sm"
+                  className="bg-white/95 text-zinc-900 border border-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg shadow-2xs backdrop-blur-md"
                 >
                   {b}
                 </span>
               ))}
               {off > 0 && (
-                <span
-                  className="px-3 py-1 text-xs font-black uppercase tracking-wider text-black rounded-lg shadow-lg"
-                  style={{ background: "var(--accent-color)" }}
-                >
+                <span className="px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg shadow-2xs">
                   {off}% OFF
                 </span>
               )}
@@ -115,13 +112,13 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   price: sale,
                 })
               }
-              className="absolute top-4 right-4 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-lg active:scale-90 cursor-pointer"
+              className="absolute top-4 right-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-zinc-800 backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xs active:scale-90 cursor-pointer"
             >
               <Heart size={18} fill={wished ? "#ef4444" : "none"} className={wished ? "text-red-500" : ""} />
             </button>
           </div>
 
-          {/* Thumbnail row */}
+          {/* Thumbnail row (Portrait 3:4 Ratio) */}
           {product.imageUrls.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-2">
               {product.imageUrls.map((src, i) => (
@@ -129,13 +126,13 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   key={src}
                   type="button"
                   onClick={() => setActiveImg(i)}
-                  className={`h-24 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`aspect-[3/4] h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
                     i === activeImg
-                      ? "border-amber-400 scale-105 shadow-md"
-                      : "border-white/15 opacity-60 hover:opacity-100"
+                      ? "border-zinc-900 scale-105 shadow-md"
+                      : "border-zinc-200 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <ProductImage src={src} alt="" className="h-full w-full object-cover" />
+                  <ProductImage src={src} alt="" className="h-full w-full object-cover object-top" />
                 </button>
               ))}
             </div>
@@ -146,40 +143,40 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
         <div className="lg:col-span-5 space-y-6">
           {/* Header Info */}
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-400 mb-2">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
               <span>{product.category}</span>
               <span>•</span>
-              <span className="text-zinc-200">{product.color}</span>
+              <span className="text-zinc-700">{product.color}</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 leading-tight">
               {product.title}
             </h1>
 
             {/* Ratings */}
-            <div className="mt-3 flex items-center gap-2 text-xs text-zinc-400">
-              <div className="flex items-center gap-1 font-bold text-amber-400">
-                <Star size={14} className="fill-amber-400" />
+            <div className="mt-3 flex items-center gap-2 text-xs text-zinc-600">
+              <div className="flex items-center gap-1 font-bold text-amber-500">
+                <Star size={14} className="fill-amber-500 text-amber-500" />
                 <span>{product.rating.toFixed(1)}</span>
               </div>
               <span>•</span>
               <span className="underline">{product.reviewCount} customer reviews</span>
               <span>•</span>
-              <span className="text-emerald-400 font-semibold">In High Demand</span>
+              <span className="text-emerald-600 font-bold">In High Demand</span>
             </div>
           </div>
 
           {/* Pricing */}
-          <div className="flex items-baseline gap-3 border-y border-white/10 py-4">
-            <span className="text-3xl font-black text-white">
+          <div className="flex items-baseline gap-3 border-y border-zinc-200 py-4">
+            <span className="text-3xl font-black text-zinc-900">
               {formatInr(sale)}
             </span>
             {product.discountPrice != null && (
               <>
-                <span className="text-base text-zinc-500 line-through font-semibold">
+                <span className="text-base text-zinc-400 line-through font-semibold">
                   {formatInr(product.price)}
                 </span>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
                   Save {off}%
                 </span>
               </>
@@ -189,12 +186,12 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           {/* Size Selector */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-900">
                 Select Size
               </span>
-              <span className="text-xs text-zinc-400">
+              <span className="text-xs text-zinc-500">
                 {size && selectedSizeStock > 0 && selectedSizeStock <= 5 ? (
-                  <strong className="text-amber-400">Only {selectedSizeStock} left!</strong>
+                  <strong className="text-amber-600">Only {selectedSizeStock} left!</strong>
                 ) : (
                   "Oversized Boxy Fit"
                 )}
@@ -213,16 +210,16 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                     type="button"
                     disabled={isOos}
                     onClick={() => setSize(s)}
-                    className={`py-3.5 rounded-xl text-sm font-black transition-all border flex flex-col items-center justify-center cursor-pointer ${
+                    className={`py-3 rounded-xl text-sm font-black transition-all border flex flex-col items-center justify-center cursor-pointer ${
                       isSelected
-                        ? "bg-white text-black border-white shadow-xl scale-105"
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-md scale-105"
                         : isOos
-                        ? "border-zinc-800 bg-zinc-950/40 text-zinc-600 line-through cursor-not-allowed"
-                        : "border-white/15 bg-zinc-900/80 text-zinc-200 hover:border-white/40 hover:text-white"
+                        ? "border-zinc-200 bg-zinc-100 text-zinc-400 line-through cursor-not-allowed"
+                        : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500 hover:text-black"
                     }`}
                   >
                     <span>{s}</span>
-                    <span className={`text-[10px] font-normal mt-0.5 ${isOos ? "text-zinc-600" : isSelected ? "text-zinc-800" : "text-zinc-500"}`}>
+                    <span className={`text-[10px] font-normal mt-0.5 ${isOos ? "text-zinc-400" : isSelected ? "text-zinc-300" : "text-zinc-500"}`}>
                       {isOos ? "OOS" : `${stock} left`}
                     </span>
                   </button>
@@ -237,12 +234,11 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               type="button"
               disabled={oos || !size || selectedSizeStock <= 0}
               onClick={handleAdd}
-              className="w-full flex items-center justify-center gap-2.5 py-4.5 rounded-2xl text-xs font-black tracking-[0.2em] text-black uppercase shadow-2xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
-              style={{ backgroundColor: "var(--accent-color)" }}
+              className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-xs font-black tracking-[0.2em] text-white bg-zinc-900 hover:bg-black uppercase shadow-md transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-40 cursor-pointer"
             >
               {justAdded ? (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="w-4 h-4 text-emerald-400" />
                   <span>Added to Bag!</span>
                 </>
               ) : oos || selectedSizeStock <= 0 ? (
@@ -254,32 +250,32 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                 </>
               )}
             </button>
-
-            {/* Free shipping perk note */}
-            <p className="text-center text-[11px] text-zinc-400 flex items-center justify-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Free Express Delivery across India on orders &gt; ₹999</span>
-            </p>
           </div>
 
+          {/* Free shipping perk note */}
+          <p className="text-center text-[11px] text-zinc-600 flex items-center justify-center gap-1.5 pt-1">
+            <Truck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Free Express Delivery across India on orders &gt; ₹999</span>
+          </p>
+
           {/* Collapsible Accordions */}
-          <div className="border-t border-white/10 divide-y divide-white/10 pt-2">
+          <div className="border-t border-zinc-200 divide-y divide-zinc-200 pt-2">
             {/* Accordion 1: Fabric & Fit */}
             <div className="py-3.5">
               <button
                 type="button"
                 onClick={() => setOpenSection(openSection === "fabric" ? null : "fabric")}
-                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-white cursor-pointer"
+                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-zinc-900 cursor-pointer"
               >
                 <span>Fabric & Silhouette</span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
-                    openSection === "fabric" ? "rotate-180 text-amber-400" : "text-zinc-500"
+                    openSection === "fabric" ? "rotate-180 text-emerald-600" : "text-zinc-400"
                   }`}
                 />
               </button>
               {openSection === "fabric" && (
-                <div className="mt-3 space-y-2 text-xs text-zinc-300 leading-relaxed animate-fade-in">
+                <div className="mt-3 space-y-2 text-xs text-zinc-600 leading-relaxed animate-fade-in">
                   <p>• <strong>240 GSM</strong> Heavyweight French Terry 100% Combed Cotton.</p>
                   <p>• Drop shoulder, boxy silhouette designed for standard oversized drape.</p>
                   <p>• High-density screen print with fade-resistant discharge inks.</p>
@@ -293,36 +289,36 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               <button
                 type="button"
                 onClick={() => setOpenSection(openSection === "size" ? null : "size")}
-                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-white cursor-pointer"
+                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-zinc-900 cursor-pointer"
               >
                 <span className="flex items-center gap-1.5">
-                  <Ruler className="w-3.5 h-3.5 text-zinc-400" />
+                  <Ruler className="w-3.5 h-3.5 text-zinc-500" />
                   <span>Size & Measurement Guide</span>
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
-                    openSection === "size" ? "rotate-180 text-amber-400" : "text-zinc-500"
+                    openSection === "size" ? "rotate-180 text-emerald-600" : "text-zinc-400"
                   }`}
                 />
               </button>
               {openSection === "size" && (
-                <div className="mt-3 overflow-x-auto text-xs text-zinc-300 animate-fade-in">
-                  <table className="w-full text-left border border-white/10 rounded-xl overflow-hidden">
-                    <thead className="bg-white/5 text-[11px] font-bold uppercase text-zinc-400">
+                <div className="mt-3 overflow-x-auto text-xs text-zinc-600 animate-fade-in">
+                  <table className="w-full text-left border border-zinc-200 rounded-xl overflow-hidden">
+                    <thead className="bg-zinc-50 text-[11px] font-bold uppercase text-zinc-700">
                       <tr>
                         <th className="p-2">Size</th>
                         <th className="p-2">Chest (Inches)</th>
                         <th className="p-2">Length (Inches)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/10">
-                      <tr><td className="p-2 font-bold text-white">S</td><td className="p-2">42</td><td className="p-2">28</td></tr>
-                      <tr><td className="p-2 font-bold text-white">M</td><td className="p-2">44</td><td className="p-2">29</td></tr>
-                      <tr><td className="p-2 font-bold text-white">L</td><td className="p-2">46</td><td className="p-2">30</td></tr>
-                      <tr><td className="p-2 font-bold text-white">XL</td><td className="p-2">48</td><td className="p-2">31</td></tr>
+                    <tbody className="divide-y divide-zinc-200">
+                      <tr><td className="p-2 font-bold text-zinc-900">S</td><td className="p-2">42</td><td className="p-2">28</td></tr>
+                      <tr><td className="p-2 font-bold text-zinc-900">M</td><td className="p-2">44</td><td className="p-2">29</td></tr>
+                      <tr><td className="p-2 font-bold text-zinc-900">L</td><td className="p-2">46</td><td className="p-2">30</td></tr>
+                      <tr><td className="p-2 font-bold text-zinc-900">XL</td><td className="p-2">48</td><td className="p-2">31</td></tr>
                     </tbody>
                   </table>
-                  <p className="mt-2 text-[11px] text-zinc-500 italic">
+                  <p className="mt-2 text-[11px] text-zinc-400 italic">
                     Note: For a standard fit, size down. For intended streetwear oversized fit, order true to size.
                   </p>
                 </div>
@@ -334,18 +330,18 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               <button
                 type="button"
                 onClick={() => setOpenSection(openSection === "shipping" ? null : "shipping")}
-                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-white cursor-pointer"
+                className="flex w-full items-center justify-between text-xs font-black uppercase tracking-wider text-zinc-900 cursor-pointer"
               >
                 <span>Delivery & Hassle-Free Returns</span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
-                    openSection === "shipping" ? "rotate-180 text-amber-400" : "text-zinc-500"
+                    openSection === "shipping" ? "rotate-180 text-emerald-600" : "text-zinc-400"
                   }`}
                 />
               </button>
               {openSection === "shipping" && (
-                <div className="mt-3 space-y-2 text-xs text-zinc-300 leading-relaxed animate-fade-in">
-                  <p>• Dispatched within 24-48 hours from our Mumbai fulfillment hub.</p>
+                <div className="mt-3 space-y-2 text-xs text-zinc-600 leading-relaxed animate-fade-in">
+                  <p>• Dispatched within 24-48 hours from our fulfillment hub.</p>
                   <p>• Delivered across metro cities in 2-4 business days.</p>
                   <p>• 7-day hassle-free exchange/return policy with doorstep pickup.</p>
                 </div>

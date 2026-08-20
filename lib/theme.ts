@@ -8,11 +8,11 @@ export type ThemePayload = {
 };
 
 export const DEFAULT_THEME: ThemePayload = {
-  bgPrimary: "#0a0a0a",
-  accentColor: "#F5E642",
-  bannerBg: "#1D4ED8",
+  bgPrimary: "#ffffff",
+  accentColor: "#16a34a",
+  bannerBg: "#ffffff",
   bannerText:
-    "🚚 prepaid orders ship on priority  ·  new drop: the print drop  ·  buy 2 @ ₹1099  ·  oversized graphics just landed",
+    "⚡ FREE SHIPPING ON ALL ORDERS OVER ₹999  ·  100% COTTON OVERSIZED TEES  ·  BUY 2 @ ₹1099  ·  7-DAY EASY DOORSTEP RETURNS",
 };
 
 export function themeToCss(theme: ThemePayload): Record<string, string> {

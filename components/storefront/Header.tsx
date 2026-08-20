@@ -44,46 +44,39 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <header
-      className={`transition-all duration-300 ${
-        overlay
-          ? "border-b border-white/10 bg-black/60 backdrop-blur-xl"
-          : "border-b border-white/10 bg-black/85 backdrop-blur-xl shadow-lg"
-      }`}
+      className={`transition-all duration-300 bg-white border-b border-zinc-200 text-zinc-900 shadow-2xs`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         {/* Mobile Menu Trigger */}
         <button
           type="button"
-          className="p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/10 lg:hidden cursor-pointer"
+          className="p-2 rounded-xl text-zinc-700 hover:text-black hover:bg-zinc-100 lg:hidden cursor-pointer"
           aria-label="Open menu"
           onClick={() => setMenuOpen((v) => !v)}
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        {/* Brand Logo */}
+        {/* Brand Logo (Veirdo Vintage Vibe) */}
         <Link href="/" className="shrink-0 group flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-zinc-800 to-zinc-900 border border-white/20 flex items-center justify-center text-white font-black text-xs group-hover:scale-105 transition-transform">
-            <span style={{ color: "var(--accent-color)" }}>ID</span>
-          </div>
-          <span className="font-[family-name:var(--font-geist-sans)] text-2xl font-black tracking-tighter text-white">
-            INK<span style={{ color: "var(--accent-color)" }}>DROP</span>
+          <span className="font-black text-2xl tracking-tighter text-emerald-600 font-[family-name:var(--font-geist-sans)]">
+            VEIRDO<span className="text-zinc-900">.</span>
           </span>
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs font-bold uppercase tracking-[0.18em] text-zinc-300">
+        <nav className="hidden lg:flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.15em] text-zinc-800">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`transition-colors duration-200 hover:text-white ${
+              className={`transition-colors duration-200 hover:text-emerald-600 ${
                 item.special
-                  ? "flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/20 bg-white/5 text-zinc-200 hover:bg-white/10"
+                  ? "flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-800 hover:bg-zinc-100"
                   : ""
               }`}
             >
-              {item.special && <Shield className="w-3 h-3 text-amber-400" />}
+              {item.special && <Shield className="w-3 h-3 text-emerald-600" />}
               {item.label}
             </Link>
           ))}
@@ -91,17 +84,17 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
         {/* Right Search & Action Icons */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Desktop Search Bar */}
+          {/* Desktop Search Bar (Matching Veirdo's light purple search box) */}
           <form onSubmit={onSearch} className="hidden sm:block relative w-48 md:w-64">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tees, fits..."
-              className="w-full rounded-full border border-white/15 bg-zinc-900/90 py-2 pl-9 pr-4 text-xs font-medium text-white placeholder-zinc-500 outline-none focus:border-white/40 focus:ring-1 focus:ring-white/40 transition-all"
+              placeholder='Try searching "T-shirt"'
+              className="w-full rounded-xl border border-purple-200 bg-purple-50/60 py-2 pl-9 pr-8 text-xs font-medium text-zinc-900 placeholder-purple-400 outline-none focus:border-purple-400 focus:bg-white transition-all shadow-2xs"
             />
             <Search
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500 pointer-events-none"
             />
             {query && (
               <button
@@ -110,7 +103,7 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
                   setQuery("");
                   setSearch("");
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-800"
                 aria-label="Clear search"
               >
                 <X size={12} />
@@ -121,15 +114,14 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
           {/* Wishlist Button */}
           <button
             type="button"
-            className="relative p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="relative p-2 rounded-xl text-zinc-800 hover:text-emerald-600 hover:bg-zinc-100 transition-colors cursor-pointer"
             aria-label="Open wishlist"
             onClick={openWishlist}
           >
             <Heart size={20} />
             {isHydrated && wishCount > 0 && (
               <span
-                className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 text-[10px] font-black text-black shadow-md animate-bounce"
-                style={{ background: "var(--accent-color)" }}
+                className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 text-[10px] font-black text-white bg-emerald-600 shadow-md animate-bounce"
               >
                 {wishCount}
               </span>
@@ -139,15 +131,14 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
           {/* Cart Bag Button */}
           <button
             type="button"
-            className="relative p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2"
+            className="relative p-2 rounded-xl text-zinc-800 hover:text-emerald-600 hover:bg-zinc-100 transition-colors cursor-pointer flex items-center gap-2"
             aria-label="Open shopping bag"
             onClick={openBag}
           >
             <ShoppingBag size={20} />
             {isHydrated && cartCount > 0 && (
               <span
-                className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 text-[10px] font-black text-black shadow-md animate-pulse"
-                style={{ background: "var(--accent-color)" }}
+                className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 text-[10px] font-black text-white bg-emerald-600 shadow-md animate-pulse"
               >
                 {cartCount}
               </span>
@@ -158,13 +149,13 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
       {/* Mobile Drawer Menu */}
       {menuOpen && (
-        <div className="border-t border-white/10 bg-black/95 px-5 py-6 space-y-4 lg:hidden backdrop-blur-2xl animate-fade-up">
+        <div className="border-t border-zinc-200 bg-white px-5 py-6 space-y-4 lg:hidden shadow-lg animate-fade-up">
           <form onSubmit={onSearch} className="relative">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search drops, collections..."
-              className="w-full rounded-xl border border-white/15 bg-zinc-900 py-3 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none"
+              className="w-full rounded-xl border border-zinc-300 bg-zinc-50 py-3 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none"
             />
             <Search
               size={16}
@@ -177,14 +168,14 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center justify-between p-3 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-200 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-800 hover:bg-zinc-100 transition-colors"
                 onClick={() => setMenuOpen(false)}
               >
                 <span>{item.label}</span>
                 {item.special ? (
-                  <Shield className="w-4 h-4 text-amber-400" />
+                  <Shield className="w-4 h-4 text-emerald-600" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-zinc-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
                 )}
               </Link>
             ))}
