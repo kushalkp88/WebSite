@@ -16,7 +16,13 @@ import {
 import { useShop } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
 
-export function ProductCard({ product }: { product: ProductDTO }) {
+export function ProductCard({
+  product,
+  isCompactMobile = false,
+}: {
+  product: ProductDTO;
+  isCompactMobile?: boolean;
+}) {
   const oos = isOutOfStock(product);
   const off = percentOff(product);
   const sale = salePrice(product);
@@ -58,7 +64,11 @@ export function ProductCard({ product }: { product: ProductDTO }) {
   }
 
   return (
-    <article className="group flex flex-col justify-between bg-white rounded-2xl border border-zinc-200 p-2.5 shadow-2xs hover:shadow-md transition-all">
+    <article
+      className={`group flex flex-col justify-between bg-white rounded-2xl border border-zinc-200 shadow-2xs hover:shadow-md transition-all ${
+        isCompactMobile ? "p-2 sm:p-3" : "p-3 sm:p-3"
+      }`}
+    >
       {/* Product Image Frame (Veirdo 3:4 Model Portrait Aspect Ratio) */}
       <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-zinc-100 border border-zinc-100">
         <Link href={`/product/${product.slug}`} className="block h-full w-full">
@@ -75,11 +85,15 @@ export function ProductCard({ product }: { product: ProductDTO }) {
         </Link>
 
         {/* Top Floating Badge (White pill matching Veirdo e.g. BEST SELLER) */}
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 pointer-events-none z-10">
+        <div className="absolute top-2 sm:top-2.5 left-2 sm:left-2.5 flex flex-col gap-1 pointer-events-none z-10">
           {product.badges.map((b) => (
             <span
               key={b}
-              className="w-fit bg-white/95 text-zinc-900 border border-zinc-200/80 px-2 py-0.5 text-[9px] font-black tracking-wider uppercase rounded-md shadow-xs backdrop-blur-md"
+              className={`w-fit bg-white/95 text-zinc-900 border border-zinc-200/80 font-black tracking-wider uppercase rounded-md shadow-xs backdrop-blur-md ${
+                isCompactMobile
+                  ? "px-1.5 py-0.5 text-[8px] sm:text-[9px]"
+                  : "px-2 py-0.5 text-[9px] sm:text-[10px]"
+              }`}
             >
               {b}
             </span>
@@ -101,13 +115,13 @@ export function ProductCard({ product }: { product: ProductDTO }) {
               price: sale,
             });
           }}
-          className="absolute top-2.5 right-2.5 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/80 text-zinc-700 backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-xs active:scale-90 cursor-pointer"
+          className="absolute top-2 sm:top-2.5 right-2 sm:right-2.5 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/80 text-zinc-700 backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-xs active:scale-90 cursor-pointer"
         >
           <Heart size={14} fill={wished ? "#ef4444" : "none"} className={wished ? "text-red-500" : ""} />
         </button>
 
         {/* Rating Pill on Bottom-Left of Image (Matching Veirdo screenshot ★ 4.5 | 325) */}
-        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-bold text-white shadow-xs">
+        <div className="absolute bottom-2 sm:bottom-2.5 left-2 sm:left-2.5 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
           <Star size={10} className="fill-amber-400 text-amber-400" />
           <span>{product.rating.toFixed(1)}</span>
           <span className="text-zinc-400">|</span>
@@ -115,26 +129,26 @@ export function ProductCard({ product }: { product: ProductDTO }) {
         </div>
 
         {/* Color Variant Count Pill on Bottom-Right */}
-        <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[10px] font-bold text-white shadow-xs">
+        <div className="absolute bottom-2 sm:bottom-2.5 right-2 sm:right-2.5 z-10 flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
           <span className="w-2 h-2 rounded-full bg-zinc-300 border border-black/40" />
           <span>1</span>
         </div>
       </div>
 
       {/* Product Details Section Below Image */}
-      <div className="mt-3 space-y-1">
+      <div className="mt-2.5 sm:mt-3 space-y-1">
         {/* Price Row: ₹549  ₹1,199  54% OFF */}
-        <div className="flex items-baseline gap-2">
-          <span className="text-base font-black text-zinc-900">
+        <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+          <span className="text-sm sm:text-base font-black text-zinc-900">
             {formatInr(sale)}
           </span>
           {product.discountPrice != null && (
-            <span className="text-xs text-zinc-400 line-through font-medium">
+            <span className="text-[11px] sm:text-xs text-zinc-400 line-through font-medium">
               {formatInr(product.price)}
             </span>
           )}
           {off > 0 && (
-            <span className="text-xs font-bold text-emerald-600">
+            <span className="text-[11px] sm:text-xs font-bold text-emerald-600">
               {off}% OFF
             </span>
           )}
@@ -215,6 +229,7 @@ export function ProductCard({ product }: { product: ProductDTO }) {
 
 export function ProductGrid({ products }: { products: ProductDTO[] }) {
   const [sort, setSort] = useState("featured");
+  const [mobileCols, setMobileCols] = useState<1 | 2>(1);
 
   const sorted = useMemo(() => {
     const list = [...products];
@@ -226,25 +241,64 @@ export function ProductGrid({ products }: { products: ProductDTO[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Top Sort Header */}
-      <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
+      {/* Top Sort & View Header */}
+      <div className="flex items-center justify-between border-b border-zinc-200 pb-4 gap-2">
         <p className="text-xs font-semibold text-zinc-600">
           Showing <strong className="text-zinc-900">{sorted.length}</strong> items
         </p>
 
-        <label className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3.5 py-1.5 text-xs font-bold tracking-wider text-zinc-900 uppercase cursor-pointer shadow-2xs">
-          <span className="text-zinc-500 text-[11px]">Sort By:</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="bg-transparent outline-none cursor-pointer font-bold text-zinc-900"
-          >
-            <option value="featured" className="bg-white text-zinc-900">Featured Drops</option>
-            <option value="low" className="bg-white text-zinc-900">Price: Low to High</option>
-            <option value="high" className="bg-white text-zinc-900">Price: High to Low</option>
-            <option value="rating" className="bg-white text-zinc-900">Highest Rated</option>
-          </select>
-        </label>
+        <div className="flex items-center gap-2">
+          {/* Mobile Grid Layout Switcher (1 Col Large vs 2 Col Grid) */}
+          <div className="flex sm:hidden items-center bg-zinc-100 p-0.5 rounded-xl border border-zinc-200">
+            <button
+              type="button"
+              onClick={() => setMobileCols(1)}
+              title="Large 1-Column View"
+              aria-label="Large 1-Column View"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                mobileCols === 1
+                  ? "bg-white text-zinc-900 shadow-xs font-bold"
+                  : "text-zinc-400 hover:text-zinc-700"
+              }`}
+            >
+              {/* Single large box icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileCols(2)}
+              title="Compact 2-Column Grid"
+              aria-label="Compact 2-Column Grid"
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                mobileCols === 2
+                  ? "bg-white text-zinc-900 shadow-xs font-bold"
+                  : "text-zinc-400 hover:text-zinc-700"
+              }`}
+            >
+              {/* 2x2 grid icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="7" height="18" x="3" y="3" rx="1" />
+                <rect width="7" height="18" x="14" y="3" rx="1" />
+              </svg>
+            </button>
+          </div>
+
+          <label className="flex items-center gap-1.5 sm:gap-2 rounded-xl border border-zinc-300 bg-white px-2.5 sm:px-3.5 py-1.5 text-[11px] sm:text-xs font-bold tracking-wider text-zinc-900 uppercase cursor-pointer shadow-2xs">
+            <span className="text-zinc-500 text-[10px] sm:text-[11px] hidden xs:inline">Sort:</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="bg-transparent outline-none cursor-pointer font-bold text-zinc-900 text-[11px] sm:text-xs"
+            >
+              <option value="featured" className="bg-white text-zinc-900">Featured Drops</option>
+              <option value="low" className="bg-white text-zinc-900">Price: Low to High</option>
+              <option value="high" className="bg-white text-zinc-900">Price: High to Low</option>
+              <option value="rating" className="bg-white text-zinc-900">Highest Rated</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {/* Grid */}
@@ -257,9 +311,15 @@ export function ProductGrid({ products }: { products: ProductDTO[] }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-3">
+        <div
+          className={`grid ${
+            mobileCols === 1
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 sm:gap-x-6 sm:gap-y-10"
+              : "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-2.5 gap-y-5 sm:gap-x-6 sm:gap-y-10"
+          }`}
+        >
           {sorted.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} isCompactMobile={mobileCols === 2} />
           ))}
         </div>
       )}

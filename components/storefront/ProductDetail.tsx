@@ -70,12 +70,12 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const selectedSizeStock = size ? stockFor(product, size) : 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid gap-12 lg:grid-cols-12">
+    <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-10">
+      <div className="grid gap-8 lg:gap-12 lg:grid-cols-12">
         {/* Left Gallery: 7 cols (Veirdo Model Portrait 3:4 Aspect Ratio) */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-3 sm:space-y-4">
           {/* Main Large Model Image */}
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-zinc-100 border border-zinc-200 shadow-sm">
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-100 border border-zinc-200 shadow-sm">
             <ProductImage
               src={product.imageUrls[activeImg] ?? product.imageUrls[0]}
               alt={product.title}
@@ -83,17 +83,17 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
             />
 
             {/* Floating Badges */}
-            <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+            <div className="absolute top-3 sm:top-4 left-3 sm:left-4 flex flex-col gap-1 sm:gap-1.5 z-10">
               {product.badges.map((b) => (
                 <span
                   key={b}
-                  className="bg-white/95 text-zinc-900 border border-zinc-200 px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg shadow-2xs backdrop-blur-md"
+                  className="bg-white/95 text-zinc-900 border border-zinc-200 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-lg shadow-2xs backdrop-blur-md"
                 >
                   {b}
                 </span>
               ))}
               {off > 0 && (
-                <span className="px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg shadow-2xs">
+                <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg shadow-2xs">
                   {off}% OFF
                 </span>
               )}
@@ -112,21 +112,21 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   price: sale,
                 })
               }
-              className="absolute top-4 right-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-zinc-800 backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xs active:scale-90 cursor-pointer"
+              className="absolute top-3 sm:top-4 right-3 sm:right-4 grid h-9 sm:h-10 w-9 sm:w-10 place-items-center rounded-full bg-white/90 text-zinc-800 backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xs active:scale-90 cursor-pointer"
             >
-              <Heart size={18} fill={wished ? "#ef4444" : "none"} className={wished ? "text-red-500" : ""} />
+              <Heart size={16} fill={wished ? "#ef4444" : "none"} className={`sm:w-[18px] sm:h-[18px] ${wished ? "text-red-500" : ""}`} />
             </button>
           </div>
 
           {/* Thumbnail row (Portrait 3:4 Ratio) */}
           {product.imageUrls.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-none">
               {product.imageUrls.map((src, i) => (
                 <button
                   key={src}
                   type="button"
                   onClick={() => setActiveImg(i)}
-                  className={`aspect-[3/4] h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`aspect-[3/4] h-20 sm:h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
                     i === activeImg
                       ? "border-zinc-900 scale-105 shadow-md"
                       : "border-zinc-200 opacity-60 hover:opacity-100"

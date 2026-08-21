@@ -129,12 +129,12 @@ export function CartDrawer() {
               {cart.map((item) => (
                 <li key={`${item.productId}-${item.size}`} className="pt-4 first:pt-0 flex gap-4">
                   {/* Thumbnail */}
-                  <div className="h-24 w-20 rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 shrink-0">
+                  <div className="aspect-[3/4] h-24 rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover object-top"
                     />
                   </div>
 
