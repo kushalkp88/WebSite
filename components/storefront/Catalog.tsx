@@ -37,23 +37,36 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
   const setSearch = useShop((s) => s.setSearch);
   const [products, setProducts] = useState(initial);
   const [sort, setSort] = useState("featured");
-  const [filters, setFilters] = useState<Filters>(() => ({
-    ...EMPTY_FILTERS,
-    categories: params.get("category") ? [params.get("category") as string] : [],
-  }));
+  const [filters, setFilters] = useState<Filters>(() => {
+    const cat = params.get("category");
+    const gender = params.get("gender");
+    const type = params.get("type");
+    const fit = params.get("fit");
+
+    return {
+      ...EMPTY_FILTERS,
+      genders: gender ? [gender] : [],
+      types: type ? [type] : [],
+      fits: cat ? [cat] : fit ? [fit] : [],
+    };
+  });
   const [showDesktopFilters, setShowDesktopFilters] = useState(true);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileSortOpen, setMobileSortOpen] = useState(false);
 
-  // Sync category param changes
+  // Sync params changes
   useEffect(() => {
     const cat = params.get("category");
-    if (cat) {
-      setFilters((prev) => ({
-        ...prev,
-        categories: [cat],
-      }));
-    }
+    const gender = params.get("gender");
+    const type = params.get("type");
+    const fit = params.get("fit");
+
+    setFilters((prev) => ({
+      ...prev,
+      genders: gender ? [gender] : prev.genders,
+      types: type ? [type] : prev.types,
+      fits: cat ? [cat] : fit ? [fit] : prev.fits,
+    }));
   }, [params]);
 
   // Periodic polling for live updates from admin
@@ -71,16 +84,49 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
   const filtered = useMemo(() => {
     const badge = params.get("badge");
-    const catParam = params.get("category");
     const q = search.trim().toLowerCase();
 
     return products.filter((p) => {
       if (q && !p.title.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
       if (badge && !p.badges.includes(badge)) return false;
-      if (catParam && p.category !== catParam) return false;
       if (filters.colors.length && !filters.colors.includes(p.color)) return false;
-      if (filters.categories.length && !filters.categories.includes(p.category))
-        return false;
+      if (filters.fits.length) {
+        const matchFit = filters.fits.some((f) => {
+          if (f === "Classic Fit" || f === "Regular") {
+            return p.category === "Classic Fit" || p.title.toLowerCase().includes("classic");
+          }
+          if (f === "Oversized") {
+            return p.category === "Oversized" || p.title.toLowerCase().includes("oversized");
+          }
+          return p.category.toLowerCase().includes(f.toLowerCase()) || p.title.toLowerCase().includes(f.toLowerCase());
+        });
+        if (!matchFit) return false;
+      }
+      if (filters.types.length) {
+        const matchType = filters.types.some((t) => {
+          if (t === "printed") {
+            return (
+              p.title.toLowerCase().includes("print") ||
+              p.title.toLowerCase().includes("graphic") ||
+              p.title.toLowerCase().includes("static") ||
+              p.title.toLowerCase().includes("bloom") ||
+              p.title.toLowerCase().includes("halo") ||
+              p.title.toLowerCase().includes("protocol")
+            );
+          }
+          if (t === "plain") {
+            return (
+              p.title.toLowerCase().includes("mono") ||
+              p.title.toLowerCase().includes("noise") ||
+              p.title.toLowerCase().includes("plain") ||
+              p.title.toLowerCase().includes("classic") ||
+              !p.title.toLowerCase().includes("graphic")
+            );
+          }
+          return true;
+        });
+        if (!matchType) return false;
+      }
       if (salePrice(p) > filters.maxPrice) return false;
       if (filters.sizes.length) {
         const anySize = filters.sizes.some((s) => stockFor(p, s) > 0);
@@ -92,9 +138,11 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
   }, [products, filters, search, params]);
 
   const activeFilterCount =
+    filters.genders.length +
+    filters.types.length +
+    filters.fits.length +
     filters.sizes.length +
     filters.colors.length +
-    filters.categories.length +
     (filters.maxPrice < 2500 ? 1 : 0);
 
   const activeSortLabel =
