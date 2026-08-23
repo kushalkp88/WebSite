@@ -11,7 +11,7 @@ export function Hero() {
         <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-1.5 shadow-2xs mb-5">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
           <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-zinc-900">
-            VEIRDO ORIGINALS • OVERSIZED COLLECTION
+            UNHINGED ORIGINALS • OVERSIZED COLLECTION
           </span>
           <Flame className="w-3.5 h-3.5 text-amber-500" />
         </div>

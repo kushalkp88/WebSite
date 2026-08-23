@@ -57,11 +57,13 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        {/* Brand Logo (Veirdo Vintage Vibe) */}
-        <Link href="/" className="shrink-0 group flex items-center gap-2">
-          <span className="font-black text-2xl tracking-tighter text-emerald-600 font-[family-name:var(--font-geist-sans)]">
-            VEIRDO<span className="text-zinc-900">.</span>
-          </span>
+        {/* Brand Logo (Unhinged) */}
+        <Link href="/" className="shrink-0 group flex items-center">
+          <img
+            src="/unhinged-logo.png"
+            alt="Unhinged"
+            className="h-9 sm:h-11 w-auto object-contain hover:opacity-90 transition-opacity"
+          />
         </Link>
 
         {/* Desktop Navigation Links */}
