@@ -100,11 +100,25 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
   const activeSortLabel =
     SORT_OPTIONS.find((o) => o.id === sort)?.label ?? "Featured";
 
-  const categoryName = params.get("category")
-    ? params.get("category")
-    : params.get("badge")
-    ? params.get("badge")
-    : "EPIC THREAD";
+  const categoryName = useMemo(() => {
+    const gender = params.get("gender");
+    const type = params.get("type");
+    const cat = params.get("category");
+    const badge = params.get("badge");
+
+    if (gender && type && cat) {
+      return `${gender.toUpperCase()}'S ${type.toUpperCase()} • ${cat.toUpperCase()}`;
+    }
+    if (gender && cat) {
+      return `${gender.toUpperCase()}'S ${cat.toUpperCase()}`;
+    }
+    if (gender) {
+      return `${gender.toUpperCase()}'S COLLECTION`;
+    }
+    if (cat) return cat.toUpperCase();
+    if (badge) return badge.toUpperCase();
+    return "ALL DROPS";
+  }, [params]);
 
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });

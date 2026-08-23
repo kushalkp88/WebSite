@@ -2,16 +2,79 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, Menu, Search, ShoppingBag, X, Shield, Sparkles } from "lucide-react";
-import { FormEvent, useState, useSyncExternalStore } from "react";
+import {
+  Heart,
+  Menu,
+  Search,
+  ShoppingBag,
+  X,
+  Shield,
+  Sparkles,
+  ChevronDown,
+  ArrowRight,
+  Flame,
+  Palette,
+} from "lucide-react";
+import { FormEvent, useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useShop } from "@/lib/cart-store";
 
-const NAV = [
-  { href: "/#catalog", label: "All Drops" },
-  { href: "/?category=Oversized#catalog", label: "Oversized" },
-  { href: "/?badge=BEST%20SELLER#catalog", label: "Best Sellers" },
-  { href: "/?category=Acid%20Wash#catalog", label: "Acid Wash" },
-  { href: "/admin", label: "Admin Panel", special: true },
+export type NavItem = {
+  label: string;
+  href: string;
+};
+
+export type CategoryGroup = {
+  title: string;
+  subtitle: string;
+  items: NavItem[];
+};
+
+const MEN_CATEGORIES: CategoryGroup[] = [
+  {
+    title: "Plain Tee",
+    subtitle: "Essential Solids & Boxy Fits",
+    items: [
+      { label: "Regular", href: "/?gender=men&type=plain&category=Classic%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=men&type=plain&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=men&type=plain&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=men&type=plain&category=Hoodies#catalog" },
+    ],
+  },
+  {
+    title: "Printed Tee",
+    subtitle: "High-Density Graphic Prints",
+    items: [
+      { label: "Regular", href: "/?gender=men&type=printed&category=Classic%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=men&type=printed&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=men&type=printed&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=men&type=printed&category=Hoodies#catalog" },
+    ],
+  },
+];
+
+const WOMEN_CATEGORIES: CategoryGroup[] = [
+  {
+    title: "Plain Tee",
+    subtitle: "Minimal Clean Essentials",
+    items: [
+      { label: "Crop Top", href: "/?gender=women&type=plain&category=Crop%20Top#catalog" },
+      { label: "Boyfriend Fit", href: "/?gender=women&type=plain&category=Boyfriend%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=women&type=plain&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=women&type=plain&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=women&type=plain&category=Hoodies#catalog" },
+    ],
+  },
+  {
+    title: "Printed Tee",
+    subtitle: "Statement Aesthetic Graphics",
+    items: [
+      { label: "Crop Top", href: "/?gender=women&type=printed&category=Crop%20Top#catalog" },
+      { label: "Boyfriend Fit", href: "/?gender=women&type=printed&category=Boyfriend%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=women&type=printed&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=women&type=printed&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=women&type=printed&category=Hoodies#catalog" },
+    ],
+  },
 ];
 
 const emptySubscribe = () => () => {};
@@ -24,27 +87,52 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
   const openWishlist = useShop((s) => s.openWishlist);
   const cartCount = useShop((s) => s.cart.reduce((n, i) => n + i.qty, 0));
   const wishCount = useShop((s) => s.wishlist.length);
-  
+
   const [query, setQuery] = useState(search);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<"men" | "women" | null>(null);
 
-  // Safe client hydration check without cascading render warning
+  // Mobile accordion states
+  const [mobileMenOpen, setMobileMenOpen] = useState(false);
+  const [mobileWomenOpen, setMobileWomenOpen] = useState(false);
+
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Safe client hydration check
   const isHydrated = useSyncExternalStore(
     emptySubscribe,
     () => true,
     () => false
   );
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   function onSearch(e: FormEvent) {
     e.preventDefault();
     setSearch(query);
     router.push("/#catalog");
     setMenuOpen(false);
+    setActiveDropdown(null);
+  }
+
+  function handleNavClick() {
+    setActiveDropdown(null);
+    setMenuOpen(false);
   }
 
   return (
     <header
-      className={`transition-all duration-300 bg-white border-b border-zinc-200 text-zinc-900 shadow-2xs`}
+      ref={navRef}
+      className="relative z-50 bg-white border-b border-zinc-200 text-zinc-900 shadow-2xs"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         {/* Mobile Menu Trigger */}
@@ -58,7 +146,7 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
         </button>
 
         {/* Brand Logo (Unhinged) */}
-        <Link href="/" className="shrink-0 group flex items-center">
+        <Link href="/" className="shrink-0 group flex items-center" onClick={handleNavClick}>
           <img
             src="/unhinged-logo.png"
             alt="Unhinged"
@@ -66,27 +154,182 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
           />
         </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-6 text-[11px] font-black uppercase tracking-[0.15em] text-zinc-800">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`transition-colors duration-200 hover:text-emerald-600 ${
-                item.special
-                  ? "flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-800 hover:bg-zinc-100"
-                  : ""
+        {/* Desktop Navigation Links with Multi-Level Mega Menus */}
+        <nav className="hidden lg:flex items-center gap-7 text-[11px] font-black uppercase tracking-[0.16em] text-zinc-800">
+          {/* MEN Dropdown Trigger */}
+          <div
+            className="relative"
+            onMouseEnter={() => setActiveDropdown("men")}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "men" ? null : "men")}
+              className={`flex items-center gap-1.5 py-2 hover:text-emerald-600 transition-colors cursor-pointer ${
+                activeDropdown === "men" ? "text-emerald-600 font-extrabold" : ""
               }`}
             >
-              {item.special && <Shield className="w-3 h-3 text-emerald-600" />}
-              {item.label}
-            </Link>
-          ))}
+              <span>MEN</span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${
+                  activeDropdown === "men" ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                }`}
+              />
+            </button>
+
+            {/* MEN Mega Menu Dropdown */}
+            {activeDropdown === "men" && (
+              <div
+                onMouseLeave={() => setActiveDropdown(null)}
+                className="absolute top-full left-0 mt-1 w-[540px] rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-fade-down z-50"
+              >
+                <div className="grid grid-cols-2 gap-8">
+                  {MEN_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-3">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-emerald-600" />
+                          {cat.title}
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 font-medium lowercase tracking-normal">
+                          {cat.subtitle}
+                        </p>
+                      </div>
+                      <ul className="space-y-2 border-t border-zinc-100 pt-2">
+                        {cat.items.map((item) => (
+                          <li key={item.label}>
+                            <Link
+                              href={item.href}
+                              onClick={handleNavClick}
+                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{item.label}</span>
+                              <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600 transition-opacity" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Promo Strip */}
+                <div className="mt-5 pt-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                    240 GSM HEAVYWEIGHT DROP
+                  </span>
+                  <Link
+                    href="/?gender=men#catalog"
+                    onClick={handleNavClick}
+                    className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
+                  >
+                    <span>View All Men&apos;s Drops</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* WOMEN Dropdown Trigger */}
+          <div
+            className="relative"
+            onMouseEnter={() => setActiveDropdown("women")}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "women" ? null : "women")}
+              className={`flex items-center gap-1.5 py-2 hover:text-emerald-600 transition-colors cursor-pointer ${
+                activeDropdown === "women" ? "text-emerald-600 font-extrabold" : ""
+              }`}
+            >
+              <span>WOMEN</span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${
+                  activeDropdown === "women" ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                }`}
+              />
+            </button>
+
+            {/* WOMEN Mega Menu Dropdown */}
+            {activeDropdown === "women" && (
+              <div
+                onMouseLeave={() => setActiveDropdown(null)}
+                className="absolute top-full left-0 mt-1 w-[560px] rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-fade-down z-50"
+              >
+                <div className="grid grid-cols-2 gap-8">
+                  {WOMEN_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-3">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          {cat.title}
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 font-medium lowercase tracking-normal">
+                          {cat.subtitle}
+                        </p>
+                      </div>
+                      <ul className="space-y-2 border-t border-zinc-100 pt-2">
+                        {cat.items.map((item) => (
+                          <li key={item.label}>
+                            <Link
+                              href={item.href}
+                              onClick={handleNavClick}
+                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
+                            >
+                              <span>{item.label}</span>
+                              <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600 transition-opacity" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Promo Strip */}
+                <div className="mt-5 pt-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                    CROPS & OVERSIZED STREETWEAR
+                  </span>
+                  <Link
+                    href="/?gender=women#catalog"
+                    onClick={handleNavClick}
+                    className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
+                  >
+                    <span>View All Women&apos;s Drops</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* CUSTOMIZATION Direct Link */}
+          <Link
+            href="/customization"
+            onClick={handleNavClick}
+            className="flex items-center gap-1.5 py-2 hover:text-emerald-600 transition-colors"
+          >
+            <Palette className="w-3.5 h-3.5 text-emerald-600" />
+            <span>CUSTOMIZATION</span>
+          </Link>
+
+          {/* Admin Panel Button */}
+          <Link
+            href="/admin"
+            onClick={handleNavClick}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-800 hover:bg-zinc-100 hover:text-emerald-600 transition-all shadow-2xs"
+          >
+            <Shield className="w-3 h-3 text-emerald-600" />
+            <span>ADMIN PANEL</span>
+          </Link>
         </nav>
 
         {/* Right Search & Action Icons */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Desktop Search Bar (Matching Veirdo's light purple search box) */}
+          {/* Desktop Search Bar */}
           <form onSubmit={onSearch} className="hidden sm:block relative w-48 md:w-64">
             <input
               value={query}
@@ -149,14 +392,15 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer Menu with Accordions */}
       {menuOpen && (
-        <div className="border-t border-zinc-200 bg-white px-5 py-6 space-y-4 lg:hidden shadow-lg animate-fade-up">
+        <div className="border-t border-zinc-200 bg-white px-5 py-6 space-y-4 lg:hidden shadow-lg animate-fade-up max-h-[85vh] overflow-y-auto">
+          {/* Mobile Search Bar */}
           <form onSubmit={onSearch} className="relative">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search drops, collections..."
+              placeholder="Search drops, fits..."
               className="w-full rounded-xl border border-zinc-300 bg-zinc-50 py-3 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none"
             />
             <Search
@@ -165,22 +409,121 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             />
           </form>
 
-          <div className="space-y-1.5 pt-2">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center justify-between p-3 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-800 hover:bg-zinc-100 transition-colors"
-                onClick={() => setMenuOpen(false)}
+          {/* Mobile Category Accordions */}
+          <div className="space-y-2 pt-2">
+            {/* MEN Accordion */}
+            <div className="border border-zinc-200 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileMenOpen(!mobileMenOpen)}
+                className="w-full flex items-center justify-between p-3.5 text-xs font-black uppercase tracking-widest text-zinc-900 bg-zinc-50 hover:bg-zinc-100"
               >
-                <span>{item.label}</span>
-                {item.special ? (
-                  <Shield className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-                )}
-              </Link>
-            ))}
+                <span className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-emerald-600" />
+                  MEN
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${
+                    mobileMenOpen ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                  }`}
+                />
+              </button>
+
+              {mobileMenOpen && (
+                <div className="p-4 bg-white space-y-4 border-t border-zinc-200 animate-fade-in">
+                  {MEN_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-2">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-zinc-400">
+                        {cat.title}
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {cat.items.map((item) => (
+                          <Link
+                            key={item.label}
+                            href={item.href}
+                            onClick={handleNavClick}
+                            className="p-2 rounded-lg bg-zinc-50 hover:bg-emerald-50 text-xs font-bold text-zinc-800 hover:text-emerald-700 transition-colors"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* WOMEN Accordion */}
+            <div className="border border-zinc-200 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileWomenOpen(!mobileWomenOpen)}
+                className="w-full flex items-center justify-between p-3.5 text-xs font-black uppercase tracking-widest text-zinc-900 bg-zinc-50 hover:bg-zinc-100"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  WOMEN
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${
+                    mobileWomenOpen ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                  }`}
+                />
+              </button>
+
+              {mobileWomenOpen && (
+                <div className="p-4 bg-white space-y-4 border-t border-zinc-200 animate-fade-in">
+                  {WOMEN_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-2">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-zinc-400">
+                        {cat.title}
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {cat.items.map((item) => (
+                          <Link
+                            key={item.label}
+                            href={item.href}
+                            onClick={handleNavClick}
+                            className="p-2 rounded-lg bg-zinc-50 hover:bg-emerald-50 text-xs font-bold text-zinc-800 hover:text-emerald-700 transition-colors"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CUSTOMIZATION Direct Link */}
+            <Link
+              href="/customization"
+              onClick={handleNavClick}
+              className="flex items-center justify-between p-3.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-xs font-black uppercase tracking-widest text-emerald-900 hover:bg-emerald-100 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-emerald-600" />
+                CUSTOMIZATION
+              </span>
+              <ArrowRight size={14} className="text-emerald-600" />
+            </Link>
+
+            {/* ADMIN PANEL */}
+            <Link
+              href="/admin"
+              onClick={handleNavClick}
+              className="flex items-center justify-between p-3.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-xs font-black uppercase tracking-widest text-zinc-800 hover:bg-zinc-100 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-600" />
+                ADMIN PANEL
+              </span>
+              <ArrowRight size={14} className="text-zinc-400" />
+            </Link>
           </div>
         </div>
       )}
