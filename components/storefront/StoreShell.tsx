@@ -120,17 +120,14 @@ export function StoreShell({
           </div>
 
           {/* Right Bottom Logo Col */}
-          <div className="space-y-3 md:col-span-1 flex flex-col md:items-end">
+          <div className="md:col-span-1 flex flex-col md:items-end justify-start">
             <Link href="/" className="inline-block">
               <img
                 src="/unhinged-logo.png"
                 alt="Unhinged"
-                className="h-9 sm:h-11 w-auto object-contain hover:opacity-90 transition-opacity"
+                className="h-9 sm:h-12 w-auto object-contain hover:opacity-90 transition-opacity"
               />
             </Link>
-            <p className="text-xs text-zinc-500 md:text-right max-w-xs leading-relaxed">
-              Loud prints. Heavyweight cotton. Pure streetwear energy.
-            </p>
           </div>
         </div>
       </footer>
