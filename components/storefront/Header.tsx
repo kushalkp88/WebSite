@@ -25,14 +25,12 @@ export type NavItem = {
 
 export type CategoryGroup = {
   title: string;
-  subtitle: string;
   items: NavItem[];
 };
 
 const MEN_CATEGORIES: CategoryGroup[] = [
   {
     title: "Plain Tee",
-    subtitle: "Essential Solids & Boxy Fits",
     items: [
       { label: "Regular", href: "/?gender=men&type=plain&category=Classic%20Fit#catalog" },
       { label: "Oversized", href: "/?gender=men&type=plain&category=Oversized#catalog" },
@@ -42,7 +40,6 @@ const MEN_CATEGORIES: CategoryGroup[] = [
   },
   {
     title: "Printed Tee",
-    subtitle: "High-Density Graphic Prints",
     items: [
       { label: "Regular", href: "/?gender=men&type=printed&category=Classic%20Fit#catalog" },
       { label: "Oversized", href: "/?gender=men&type=printed&category=Oversized#catalog" },
@@ -55,7 +52,6 @@ const MEN_CATEGORIES: CategoryGroup[] = [
 const WOMEN_CATEGORIES: CategoryGroup[] = [
   {
     title: "Plain Tee",
-    subtitle: "Minimal Clean Essentials",
     items: [
       { label: "Crop Top", href: "/?gender=women&type=plain&category=Crop%20Top#catalog" },
       { label: "Boyfriend Fit", href: "/?gender=women&type=plain&category=Boyfriend%20Fit#catalog" },
@@ -66,7 +62,6 @@ const WOMEN_CATEGORIES: CategoryGroup[] = [
   },
   {
     title: "Printed Tee",
-    subtitle: "Statement Aesthetic Graphics",
     items: [
       { label: "Crop Top", href: "/?gender=women&type=printed&category=Crop%20Top#catalog" },
       { label: "Boyfriend Fit", href: "/?gender=women&type=printed&category=Boyfriend%20Fit#catalog" },
@@ -181,27 +176,22 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             {activeDropdown === "men" && (
               <div
                 onMouseLeave={() => setActiveDropdown(null)}
-                className="absolute top-full left-0 mt-1 w-[540px] rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-fade-down z-50"
+                className="absolute top-full left-0 mt-1 w-[460px] rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl animate-fade-down z-50"
               >
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-2 gap-6">
                   {MEN_CATEGORIES.map((cat) => (
-                    <div key={cat.title} className="space-y-3">
-                      <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
-                          <Flame className="w-3.5 h-3.5 text-emerald-600" />
-                          {cat.title}
-                        </h4>
-                        <p className="text-[10px] text-zinc-400 font-medium lowercase tracking-normal">
-                          {cat.subtitle}
-                        </p>
-                      </div>
-                      <ul className="space-y-2 border-t border-zinc-100 pt-2">
+                    <div key={cat.title} className="space-y-2.5">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5 pb-1 border-b border-zinc-100">
+                        <Flame className="w-3.5 h-3.5 text-emerald-600" />
+                        {cat.title}
+                      </h4>
+                      <ul className="space-y-1">
                         {cat.items.map((item) => (
                           <li key={item.label}>
                             <Link
                               href={item.href}
                               onClick={handleNavClick}
-                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
+                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1.5 px-2 rounded-lg hover:bg-zinc-50"
                             >
                               <span>{item.label}</span>
                               <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600 transition-opacity" />
@@ -213,11 +203,8 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
                   ))}
                 </div>
 
-                {/* Bottom Promo Strip */}
-                <div className="mt-5 pt-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                    240 GSM HEAVYWEIGHT DROP
-                  </span>
+                {/* Bottom Strip */}
+                <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-end bg-zinc-50 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
                   <Link
                     href="/?gender=men#catalog"
                     onClick={handleNavClick}
@@ -256,27 +243,22 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             {activeDropdown === "women" && (
               <div
                 onMouseLeave={() => setActiveDropdown(null)}
-                className="absolute top-full left-0 mt-1 w-[560px] rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-fade-down z-50"
+                className="absolute top-full left-0 mt-1 w-[480px] rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl animate-fade-down z-50"
               >
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-2 gap-6">
                   {WOMEN_CATEGORIES.map((cat) => (
-                    <div key={cat.title} className="space-y-3">
-                      <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                          {cat.title}
-                        </h4>
-                        <p className="text-[10px] text-zinc-400 font-medium lowercase tracking-normal">
-                          {cat.subtitle}
-                        </p>
-                      </div>
-                      <ul className="space-y-2 border-t border-zinc-100 pt-2">
+                    <div key={cat.title} className="space-y-2.5">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5 pb-1 border-b border-zinc-100">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        {cat.title}
+                      </h4>
+                      <ul className="space-y-1">
                         {cat.items.map((item) => (
                           <li key={item.label}>
                             <Link
                               href={item.href}
                               onClick={handleNavClick}
-                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1"
+                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1.5 px-2 rounded-lg hover:bg-zinc-50"
                             >
                               <span>{item.label}</span>
                               <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600 transition-opacity" />
@@ -288,11 +270,8 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
                   ))}
                 </div>
 
-                {/* Bottom Promo Strip */}
-                <div className="mt-5 pt-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                    CROPS & OVERSIZED STREETWEAR
-                  </span>
+                {/* Bottom Strip */}
+                <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-end bg-zinc-50 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
                   <Link
                     href="/?gender=women#catalog"
                     onClick={handleNavClick}
