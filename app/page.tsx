@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { serializeProduct } from "@/lib/product";
 import { Catalog } from "@/components/storefront/Catalog";
-import { TrustBar } from "@/components/storefront/TrustBar";
 import { StoreShell } from "@/components/storefront/StoreShell";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +15,6 @@ export default async function HomePage() {
 
   return (
     <StoreShell>
-      <TrustBar />
       <Suspense>
         <Catalog initial={products} />
       </Suspense>
