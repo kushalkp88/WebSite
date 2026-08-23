@@ -23,7 +23,6 @@ import {
   type Filters,
 } from "./FilterSidebar";
 import { ProductGrid } from "./ProductGrid";
-import { CategoryPills } from "./CategoryPills";
 
 const SORT_OPTIONS = [
   { id: "featured", label: "Featured" },
@@ -113,11 +112,6 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
   return (
     <section id="catalog" className="mx-auto max-w-7xl px-2.5 sm:px-6 lg:px-8 py-6 sm:py-12 scroll-mt-20">
-      {/* Category Pills Strip */}
-      <div className="mb-5 sm:mb-8">
-        <CategoryPills />
-      </div>
-
       {/* Catalog Title & Desktop Controls Bar (Matching Veirdo screenshot: EPIC THREAD 13 items) */}
       <div className="mb-4 sm:mb-8 flex flex-wrap items-baseline justify-between gap-4 border-b border-zinc-200 pb-3 sm:pb-6">
         <div>
