@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { Header } from "./Header";
 import { WishlistDrawer } from "./WishlistDrawer";
-import { Sparkles, Shield, Check } from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
 
 export function StoreShell({
   overlayHeader = false,
@@ -79,20 +79,16 @@ export function StoreShell({
 
       {/* Clean White Footer */}
       <footer className="border-t border-zinc-200 bg-white px-6 py-12 text-xs text-zinc-600">
-        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand Col */}
+        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+          {/* Left Brand Description Col */}
           <div className="space-y-3 md:col-span-1">
-            <Link href="/" className="inline-block">
-              <img
-                src="/unhinged-logo.png"
-                alt="Unhinged"
-                className="h-8 sm:h-9 w-auto object-contain hover:opacity-90 transition-opacity"
-              />
-            </Link>
+            <p className="font-bold uppercase tracking-widest text-zinc-900 text-xs">
+              About UNHINGED
+            </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
               Online fashion store for trending men&apos;s streetwear. High quality oversized t-shirts, sweatshirts, hoodies & joggers.
             </p>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-zinc-400 pt-1">
               © {new Date().getFullYear()} UNHINGED Apparel. All rights reserved.
             </p>
           </div>
@@ -123,21 +119,18 @@ export function StoreShell({
             </ul>
           </div>
 
-          {/* Admin */}
-          <div className="space-y-3">
-            <p className="font-bold uppercase tracking-widest text-zinc-900 text-xs">
-              Store Admin
-            </p>
-            <p className="text-xs text-zinc-500">
-              Manage inventory, prices, products, and live storefront theme.
-            </p>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-bold text-zinc-900 hover:bg-zinc-900 hover:text-white transition-all shadow-2xs"
-            >
-              <Shield className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Open Admin Center</span>
+          {/* Right Bottom Logo Col */}
+          <div className="space-y-3 md:col-span-1 flex flex-col md:items-end">
+            <Link href="/" className="inline-block">
+              <img
+                src="/unhinged-logo.png"
+                alt="Unhinged"
+                className="h-9 sm:h-11 w-auto object-contain hover:opacity-90 transition-opacity"
+              />
             </Link>
+            <p className="text-xs text-zinc-500 md:text-right max-w-xs leading-relaxed">
+              Loud prints. Heavyweight cotton. Pure streetwear energy.
+            </p>
           </div>
         </div>
       </footer>
