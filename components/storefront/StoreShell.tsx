@@ -120,12 +120,12 @@ export function StoreShell({
           </div>
 
           {/* Right Bottom Logo Col */}
-          <div className="md:col-span-1 flex flex-col md:items-end justify-start">
+          <div className="md:col-span-1 flex flex-col md:items-end justify-center sm:justify-start">
             <Link href="/" className="inline-block">
               <img
                 src="/unhinged-logo.png"
                 alt="Unhinged"
-                className="h-9 sm:h-12 w-auto object-contain hover:opacity-90 transition-opacity"
+                className="h-16 sm:h-20 lg:h-24 w-auto object-contain hover:opacity-90 transition-opacity"
               />
             </Link>
           </div>
