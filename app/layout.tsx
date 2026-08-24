@@ -17,8 +17,8 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata = {
-  title: "INKDROP — The Print Drop",
-  description: "Oversized graphic tees. Loud prints. Streetwear energy.",
+  title: "UNHINGED — Oversized Streetwear & Graphic Drops",
+  description: "Oversized graphic tees. Loud prints. Unhinged streetwear energy.",
 };
 
 export const dynamic = "force-dynamic";

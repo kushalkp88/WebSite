@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import { Header } from "./Header";
-import { Ticker } from "./Ticker";
 import { WishlistDrawer } from "./WishlistDrawer";
 import { Sparkles, Shield, Check } from "lucide-react";
 
@@ -31,7 +30,6 @@ export function StoreShell({
     <div className="min-h-svh bg-white text-zinc-900 selection:bg-emerald-500 selection:text-white flex flex-col justify-between">
       {/* Sticky Header Bar */}
       <div className="sticky top-0 z-50">
-        <Ticker />
         <Header overlay={overlayHeader} />
       </div>
 
@@ -43,7 +41,7 @@ export function StoreShell({
         <div className="mx-auto max-w-4xl text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
             <Sparkles className="w-3 h-3 text-emerald-600" />
-            <span>JOIN THE VEIRDO CLUB</span>
+            <span>JOIN THE UNHINGED CLUB</span>
           </div>
 
           <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 uppercase">
@@ -56,7 +54,7 @@ export function StoreShell({
           {subscribed ? (
             <div className="inline-flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold animate-fade-in">
               <Check className="w-4 h-4 text-emerald-600" />
-              <span>You&apos;re subscribed! Use code &ldquo;VEIRDO10&rdquo; at checkout.</span>
+              <span>You&apos;re subscribed! Use code &ldquo;UNHINGED10&rdquo; at checkout.</span>
             </div>
           ) : (
             <form onSubmit={handleNewsletter} className="mt-5 flex max-w-md mx-auto gap-2">
@@ -85,15 +83,17 @@ export function StoreShell({
           {/* Brand Col */}
           <div className="space-y-3 md:col-span-1">
             <Link href="/" className="inline-block">
-              <span className="text-2xl font-black tracking-tighter text-emerald-600 font-[family-name:var(--font-geist-sans)]">
-                VEIRDO<span className="text-zinc-900">.</span>
-              </span>
+              <img
+                src="/unhinged-logo.png"
+                alt="Unhinged"
+                className="h-8 sm:h-9 w-auto object-contain hover:opacity-90 transition-opacity"
+              />
             </Link>
             <p className="text-xs text-zinc-500 leading-relaxed">
               Online fashion store for trending men&apos;s streetwear. High quality oversized t-shirts, sweatshirts, hoodies & joggers.
             </p>
             <p className="text-[11px] text-zinc-400">
-              © {new Date().getFullYear()} VEIRDO Apparel. All rights reserved.
+              © {new Date().getFullYear()} UNHINGED Apparel. All rights reserved.
             </p>
           </div>
 
