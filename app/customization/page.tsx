@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { StoreShell } from "@/components/storefront/StoreShell";
 import { useShop } from "@/lib/cart-store";
-import { Sparkles, Upload, Type, Check, RefreshCw, ShoppingBag, Palette, Shirt } from "lucide-react";
+import { Sparkles, Type, Check, ShoppingBag, Palette, Shirt } from "lucide-react";
 import type { Size } from "@/lib/product";
 
 const COLORS = [

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Plus, 
   Search, 
@@ -14,7 +14,9 @@ import {
   List, 
   AlertCircle,
   Image as ImageIcon,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  FolderOpen
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock, percentOff } from "@/lib/product";
@@ -57,6 +59,7 @@ interface ProductManagerProps {
   initial: ProductDTO[];
   editingTarget?: ProductDTO | null;
   creatingTarget?: boolean;
+  initialCreateImageUrl?: string | null;
   onClearTargets?: () => void;
   onShowToast: (msg: string, type?: "success" | "error") => void;
 }
@@ -65,6 +68,7 @@ export function ProductManager({
   initial,
   editingTarget = null,
   creatingTarget = false,
+  initialCreateImageUrl = null,
   onClearTargets,
   onShowToast,
 }: ProductManagerProps) {
@@ -80,13 +84,18 @@ export function ProductManager({
   const [deleteCandidate, setDeleteCandidate] = useState<ProductDTO | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    if (editingTarget !== undefined) setEditing(editingTarget);
-  }, [editingTarget]);
+  const [prevEditingTarget, setPrevEditingTarget] = useState(editingTarget);
+  const [prevCreatingTarget, setPrevCreatingTarget] = useState(creatingTarget);
 
-  useEffect(() => {
-    if (creatingTarget !== undefined) setCreating(creatingTarget);
-  }, [creatingTarget]);
+  if (editingTarget !== prevEditingTarget) {
+    setPrevEditingTarget(editingTarget);
+    setEditing(editingTarget);
+  }
+
+  if (creatingTarget !== prevCreatingTarget) {
+    setPrevCreatingTarget(creatingTarget);
+    setCreating(creatingTarget);
+  }
 
   const categories = useMemo(() => {
     const list = Array.from(new Set(products.map((p) => p.category))).filter(Boolean);
@@ -692,12 +701,14 @@ export function ProductManager({
       {(creating || editing) && (
         <ProductModal
           product={editing}
+          initialImageUrl={initialCreateImageUrl}
           categories={categories.length ? categories : PRESET_CATEGORIES}
           onClose={() => {
             setCreating(false);
             setEditing(null);
             onClearTargets?.();
           }}
+          onShowToast={onShowToast}
           onSaved={async () => {
             setCreating(false);
             setEditing(null);
@@ -768,19 +779,39 @@ export function ProductManager({
 interface ProductModalProps {
   product: ProductDTO | null;
   categories: string[];
+  initialImageUrl?: string | null;
   onClose: () => void;
   onSaved: () => void;
+  onShowToast?: (msg: string, type?: "success" | "error") => void;
 }
 
-function ProductModal({ product, categories, onClose, onSaved }: ProductModalProps) {
+function ProductModal({
+  product,
+  categories,
+  initialImageUrl,
+  onClose,
+  onSaved,
+  onShowToast,
+}: ProductModalProps) {
   const isEditing = Boolean(product);
-  const [form, setForm] = useState({
-    ...blankProduct,
-    ...product,
-    imageUrls: product?.imageUrls?.length ? product.imageUrls : [""],
+  const [form, setForm] = useState(() => {
+    const base = {
+      ...blankProduct,
+      ...product,
+      imageUrls: product?.imageUrls?.length ? product.imageUrls : [""],
+    };
+    if (!product && initialImageUrl) {
+      base.imageUrls = [initialImageUrl];
+    }
+    return base;
   });
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isDragOverImages, setIsDragOverImages] = useState(false);
+  const [activeSlotTarget, setActiveSlotTarget] = useState<number | null>(null);
+  const multiFileInputRef = useRef<HTMLInputElement>(null);
+  const singleSlotFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -797,6 +828,66 @@ function ProductModal({ product, categories, onClose, onSaved }: ProductModalPro
       .replace(/(^-|-$)/g, "")
       .slice(0, 60);
     setForm((f) => ({ ...f, slug }));
+  }
+
+  async function handleUploadFiles(files: FileList | File[], targetSlot?: number | null) {
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
+
+    setUploadingImage(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      let data: { success?: boolean; error?: string; urls?: string[] } = {};
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        throw new Error(`Upload failed (HTTP ${res.status})`);
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload image");
+      }
+
+      const uploadedUrls = data.urls || [];
+      if (uploadedUrls.length === 0) return;
+
+      if (targetSlot !== undefined && targetSlot !== null && targetSlot >= 0) {
+        const next = [...form.imageUrls];
+        next[targetSlot] = uploadedUrls[0];
+        if (uploadedUrls.length > 1) {
+          next.push(...uploadedUrls.slice(1));
+        }
+        setForm((f) => ({ ...f, imageUrls: next }));
+      } else {
+        const existingNonEmpty = form.imageUrls.filter((u) => u.trim() !== "");
+        const combined = [...existingNonEmpty, ...uploadedUrls];
+        setForm((f) => ({ ...f, imageUrls: combined.length ? combined : [""] }));
+      }
+
+      onShowToast?.(
+        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} from your computer!`,
+        "success"
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to upload image";
+      setErrorMsg(message);
+      onShowToast?.(message, "error");
+    } finally {
+      setUploadingImage(false);
+      setActiveSlotTarget(null);
+      if (multiFileInputRef.current) multiFileInputRef.current.value = "";
+      if (singleSlotFileInputRef.current) singleSlotFileInputRef.current.value = "";
+    }
   }
 
   function handleImageChange(idx: number, val: string) {
@@ -859,7 +950,12 @@ function ProductModal({ product, categories, onClose, onSaved }: ProductModalPro
       });
 
       if (!res.ok) {
-        const err = (await res.json()) as { error?: string };
+        let err: { error?: string } = {};
+        try {
+          err = (await res.json()) as typeof err;
+        } catch {
+          err = { error: `Server error (${res.status} ${res.statusText})` };
+        }
         throw new Error(err.error || "Failed to save product");
       }
 
@@ -1134,31 +1230,100 @@ function ProductModal({ product, categories, onClose, onSaved }: ProductModalPro
               </div>
             </div>
 
-            {/* Image URLs */}
+            {/* Image Assets */}
             <div className="space-y-3 pt-4 border-t border-zinc-800/80">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                  4. Image Assets
-                </h3>
-                <button
-                  type="button"
-                  onClick={addImageSlot}
-                  className="text-xs text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add image URL
-                </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    4. Image Assets
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                    Upload images from your computer or paste image URLs.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => multiFileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
+                    <span>{uploadingImage ? "Uploading..." : "Upload from Computer"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addImageSlot}
+                    className="text-xs text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add URL</span>
+                  </button>
+                </div>
               </div>
 
+              {/* Hidden file input for multi-file upload */}
+              <input
+                ref={multiFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleUploadFiles(e.target.files, null);
+                }}
+              />
+
+              {/* Hidden file input for single slot upload */}
+              <input
+                ref={singleSlotFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleUploadFiles(e.target.files, activeSlotTarget);
+                }}
+              />
+
+              {/* Drag and Drop Zone */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOverImages(true);
+                }}
+                onDragLeave={() => setIsDragOverImages(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragOverImages(false);
+                  if (e.dataTransfer.files) handleUploadFiles(e.dataTransfer.files, null);
+                }}
+                onClick={() => multiFileInputRef.current?.click()}
+                className={`border border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer ${
+                  isDragOverImages
+                    ? "border-amber-400 bg-amber-400/10"
+                    : "border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-950"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
+                  <Upload className="w-4 h-4 text-amber-400" />
+                  <span>
+                    {uploadingImage
+                      ? "Uploading image files to server..."
+                      : "Drag & drop images here, or click to browse computer files"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Image Slots List */}
               <div className="space-y-2">
                 {form.imageUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-lg bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                  <div key={idx} className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-1.5 pr-2">
+                    <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative">
                       {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={url}
-                          alt="preview"
+                          alt={`Slot ${idx + 1}`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = "none";
@@ -1168,20 +1333,35 @@ function ProductModal({ product, categories, onClose, onSaved }: ProductModalPro
                         <ImageIcon className="w-4 h-4 text-zinc-600" />
                       )}
                     </div>
+
                     <input
-                      type="url"
-                      placeholder="https://images.unsplash.com/... or relative URL"
+                      type="text"
+                      placeholder="Image URL (/uploads/... or https://...)"
                       value={url}
                       onChange={(e) => handleImageChange(idx, e.target.value)}
-                      className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                      className="flex-1 bg-transparent border-0 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none px-2"
                     />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSlotTarget(idx);
+                        singleSlotFileInputRef.current?.click();
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+                      title="Upload local file to this slot"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Browse</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => removeImageSlot(idx)}
-                      className="p-2 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 cursor-pointer"
-                      title="Remove URL"
+                      className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                      title="Remove image"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}

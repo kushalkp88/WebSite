@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   ChevronUp,
   X,
-  Sparkles,
   Check,
 } from "lucide-react";
 import {
@@ -54,8 +53,12 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileSortOpen, setMobileSortOpen] = useState(false);
 
-  // Sync params changes
-  useEffect(() => {
+  // Sync params changes during render
+  const [prevParamsString, setPrevParamsString] = useState(() => params.toString());
+  const currentParamsString = params.toString();
+
+  if (currentParamsString !== prevParamsString) {
+    setPrevParamsString(currentParamsString);
     const cat = params.get("category");
     const gender = params.get("gender");
     const type = params.get("type");
@@ -67,7 +70,7 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       types: type ? [type] : prev.types,
       fits: cat ? [cat] : fit ? [fit] : prev.fits,
     }));
-  }, [params]);
+  }
 
   // Periodic polling for live updates from admin
   useEffect(() => {

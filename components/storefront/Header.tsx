@@ -127,7 +127,9 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
   return (
     <header
       ref={navRef}
-      className="relative z-50 bg-white border-b border-zinc-200 text-zinc-900 shadow-2xs"
+      className={`relative z-50 border-b border-zinc-200 text-zinc-900 shadow-2xs ${
+        overlay ? "bg-white/90 backdrop-blur-md" : "bg-white"
+      }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         {/* Mobile Menu Trigger */}

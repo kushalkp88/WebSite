@@ -5,11 +5,8 @@ import {
   Heart, 
   Star, 
   Truck, 
-  ShieldCheck, 
-  RefreshCw, 
   Ruler, 
   ChevronDown, 
-  Sparkles, 
   ShoppingBag, 
   Check 
 } from "lucide-react";

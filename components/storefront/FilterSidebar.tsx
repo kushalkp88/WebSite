@@ -146,7 +146,7 @@ export function FilterSidebar({
             const checked = filters.fits.includes(fit);
             // Count matching in current products list
             const count = products.filter((p) => {
-              if (fit === "Classic Fit" || fit === "Regular") {
+              if (fit === "Classic Fit") {
                 return p.category === "Classic Fit" || p.title.toLowerCase().includes("classic");
               }
               if (fit === "Oversized") {
