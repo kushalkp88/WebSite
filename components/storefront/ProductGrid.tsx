@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Heart, Star, Sparkles, Check } from "lucide-react";
+import { Heart, Star, Sparkles, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import {
   formatInr,
@@ -22,6 +22,8 @@ export function ProductCard({ product }: { product: ProductDTO }) {
   const sale = salePrice(product);
   const [picking, setPicking] = useState(false);
   const [addedSize, setAddedSize] = useState<Size | null>(null);
+  const [imgIdx, setImgIdx] = useState(0);
+  const [isReduced, setIsReduced] = useState(false);
 
   const addToCart = useShop((s) => s.addToCart);
   const toggleWishlist = useShop((s) => s.toggleWishlist);
@@ -29,8 +31,8 @@ export function ProductCard({ product }: { product: ProductDTO }) {
     s.wishlist.some((w) => w.productId === product.id),
   );
 
-  const img = product.imageUrls[0];
-  const hover = product.imageUrls[1] ?? img;
+  const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [""];
+  const currentImg = images[imgIdx] ?? images[0];
 
   function handleAdd(size: Size, e: React.MouseEvent) {
     e.preventDefault();
@@ -43,7 +45,7 @@ export function ProductCard({ product }: { product: ProductDTO }) {
       productId: product.id,
       slug: product.slug,
       title: product.title,
-      image: img,
+      image: currentImg,
       price: sale,
       size,
       qty: 1,
@@ -57,22 +59,87 @@ export function ProductCard({ product }: { product: ProductDTO }) {
     }, 1200);
   }
 
+  function handlePrevImage(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  }
+
+  function handleNextImage(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  }
+
+  function handleImageClick() {
+    setIsReduced((prev) => !prev);
+  }
+
   return (
     <article className="group flex flex-col justify-between transition-all">
       {/* Product Image Frame (Veirdo 3:4 Aspect Ratio - Full Width of Column) */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl sm:rounded-2xl bg-zinc-100 border border-zinc-200/80 shadow-2xs">
-        <Link href={`/product/${product.slug}`} className="block h-full w-full">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl sm:rounded-2xl bg-zinc-100 border border-zinc-200/80 shadow-2xs group/card select-none">
+        <Link 
+          href={`/product/${product.slug}`} 
+          onClick={handleImageClick}
+          className={`block h-full w-full transition-transform duration-300 ease-out active:scale-90 ${
+            isReduced ? "scale-[0.88] p-2" : "scale-100"
+          }`}
+        >
           <ProductImage
-            src={img}
+            src={currentImg}
             alt={product.title}
-            className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105 group-hover:opacity-0"
-          />
-          <ProductImage
-            src={hover}
-            alt={`${product.title} Alternate View`}
-            className="absolute inset-0 h-full w-full object-cover object-top opacity-0 transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-100"
+            className={`h-full w-full object-cover object-top transition-all duration-500 ease-out ${
+              isReduced ? "rounded-lg" : ""
+            }`}
           />
         </Link>
+
+        {/* Prev / Next Image Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={handlePrevImage}
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-zinc-900 shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:bg-white hover:scale-110 active:scale-90 transition-all cursor-pointer"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={handleNextImage}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-zinc-900 shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:bg-white hover:scale-110 active:scale-90 transition-all cursor-pointer"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
+        )}
+
+        {/* Scrolling Pagination Dots for multiple images */}
+        {images.length > 1 && (
+          <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full shadow-xs">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Go to image ${i + 1}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setImgIdx(i);
+                }}
+                onMouseEnter={() => setImgIdx(i)}
+                className={`transition-all duration-300 cursor-pointer ${
+                  imgIdx === i
+                    ? "w-4 h-1.5 bg-white rounded-full shadow-xs"
+                    : "w-1.5 h-1.5 bg-white/50 hover:bg-white/90 rounded-full"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Top Floating Badge (Matching Veirdo e.g. EPIC THREAD COLLECTION / BEST SELLER) */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none z-10">
@@ -97,7 +164,7 @@ export function ProductCard({ product }: { product: ProductDTO }) {
               productId: product.id,
               slug: product.slug,
               title: product.title,
-              image: img,
+              image: currentImg,
               price: sale,
             });
           }}
@@ -106,20 +173,20 @@ export function ProductCard({ product }: { product: ProductDTO }) {
           <Heart size={14} fill={wished ? "#ef4444" : "none"} className={wished ? "text-red-500" : ""} />
         </button>
 
-        {/* Rating Pill on Bottom-Left of Image (Matching Veirdo screenshot ★ 4.8 30) */}
+        {/* Rating Pill on Bottom-Left of Image */}
         <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 bg-black/65 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
           <Star size={10} className="fill-amber-400 text-amber-400" />
           <span>{product.rating.toFixed(1)}</span>
           <span className="text-zinc-400 font-normal">{product.reviewCount}</span>
         </div>
 
-        {/* Color Variant Count Pill on Bottom-Right (Matching Veirdo screenshot 🌓 11) */}
+        {/* Color Variant Count Pill on Bottom-Right */}
         <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 bg-black/65 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
           <div className="flex -space-x-1 items-center">
             <span className="w-2.5 h-2.5 rounded-full bg-zinc-900 border border-white/60" />
             <span className="w-2.5 h-2.5 rounded-full bg-amber-800 border border-white/60" />
           </div>
-          <span>11</span>
+          <span>{images.length > 1 ? `${images.length} views` : "11"}</span>
         </div>
       </div>
 
