@@ -5,11 +5,8 @@ import {
   Heart, 
   Star, 
   Truck, 
-  ShieldCheck, 
-  RefreshCw, 
   Ruler, 
   ChevronDown, 
-  Sparkles, 
   ShoppingBag, 
   Check 
 } from "lucide-react";
@@ -34,6 +31,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const [activeImg, setActiveImg] = useState(0);
   const [openSection, setOpenSection] = useState<string | null>("fabric");
   const [justAdded, setJustAdded] = useState(false);
+  const [isReduced, setIsReduced] = useState(false);
 
   const oos = isOutOfStock(product);
   const sale = salePrice(product);
@@ -75,11 +73,17 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
         {/* Left Gallery: 7 cols (Veirdo Model Portrait 3:4 Aspect Ratio) */}
         <div className="lg:col-span-7 space-y-3 sm:space-y-4">
           {/* Main Large Model Image */}
-          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-100 border border-zinc-200 shadow-sm">
+          <div 
+            onClick={() => setIsReduced((v) => !v)}
+            className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl sm:rounded-3xl bg-zinc-100 border border-zinc-200 shadow-sm cursor-pointer select-none group"
+            title="Click to reduce / expand image size"
+          >
             <ProductImage
               src={product.imageUrls[activeImg] ?? product.imageUrls[0]}
               alt={product.title}
-              className="h-full w-full object-cover object-top"
+              className={`h-full w-full object-cover object-top transition-all duration-300 ease-out active:scale-90 ${
+                isReduced ? "scale-[0.88] p-3 rounded-2xl" : "scale-100"
+              }`}
             />
 
             {/* Floating Badges */}

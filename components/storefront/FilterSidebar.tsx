@@ -3,21 +3,34 @@
 import type { ReactNode } from "react";
 import type { ProductDTO, Size } from "@/lib/product";
 import { formatInr, SIZES } from "@/lib/product";
-import { RotateCcw, Check } from "lucide-react";
+import { RotateCcw, Flame, Sparkles } from "lucide-react";
 
 export type Filters = {
+  genders: string[];
+  types: string[];
+  fits: string[];
   sizes: Size[];
   colors: string[];
-  categories: string[];
   maxPrice: number;
 };
 
 export const EMPTY_FILTERS: Filters = {
+  genders: [],
+  types: [],
+  fits: [],
   sizes: [],
   colors: [],
-  categories: [],
   maxPrice: 2500,
 };
+
+export const FIT_OPTIONS = [
+  "Oversized",
+  "Classic Fit",
+  "Crop Top",
+  "Boyfriend Fit",
+  "Sweatshirts",
+  "Hoodies",
+] as const;
 
 export function FilterSidebar({
   products,
@@ -29,15 +42,16 @@ export function FilterSidebar({
   onChange: (next: Filters) => void;
 }) {
   const colors = [...new Set(products.map((p) => p.color))].filter(Boolean).sort();
-  const categories = [...new Set(products.map((p) => p.category))].filter(Boolean).sort();
 
   const totalActive =
+    filters.genders.length +
+    filters.types.length +
+    filters.fits.length +
     filters.sizes.length +
     filters.colors.length +
-    filters.categories.length +
     (filters.maxPrice < 2500 ? 1 : 0);
 
-  function toggle<K extends "sizes" | "colors" | "categories">(
+  function toggle<K extends "genders" | "types" | "fits" | "sizes" | "colors">(
     key: K,
     value: Filters[K][number],
   ) {
@@ -53,7 +67,7 @@ export function FilterSidebar({
   }
 
   return (
-    <aside className="space-y-6 text-sm bg-white border border-zinc-200 rounded-2xl p-4 shadow-2xs">
+    <aside className="space-y-5 text-sm bg-white border border-zinc-200 rounded-2xl p-4 shadow-2xs">
       {/* Header with reset */}
       <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
         <span className="text-xs font-black uppercase tracking-widest text-zinc-900">
@@ -70,6 +84,97 @@ export function FilterSidebar({
           </button>
         )}
       </div>
+
+      {/* Gender / Department */}
+      <FilterGroup title="Department">
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: "men", label: "Men", icon: Flame },
+            { id: "women", label: "Women", icon: Sparkles },
+          ].map((g) => {
+            const active = filters.genders.includes(g.id);
+            const Icon = g.icon;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                onClick={() => toggle("genders", g.id)}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                  active
+                    ? "bg-zinc-900 text-white border-zinc-900 shadow-2xs"
+                    : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${active ? "text-emerald-400" : "text-zinc-400"}`} />
+                <span>{g.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </FilterGroup>
+
+      {/* Tee Type (Plain / Printed) */}
+      <FilterGroup title="Tee Type">
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: "plain", label: "Plain Tee" },
+            { id: "printed", label: "Printed Tee" },
+          ].map((t) => {
+            const active = filters.types.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => toggle("types", t.id)}
+                className={`py-2 px-2 rounded-xl text-[11px] font-black uppercase tracking-wider text-center transition-all border cursor-pointer ${
+                  active
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                    : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </FilterGroup>
+
+      {/* Fit & Silhouette */}
+      <FilterGroup title="Fit & Silhouette">
+        <div className="space-y-1.5">
+          {FIT_OPTIONS.map((fit) => {
+            const checked = filters.fits.includes(fit);
+            // Count matching in current products list
+            const count = products.filter((p) => {
+              if (fit === "Classic Fit") {
+                return p.category === "Classic Fit" || p.title.toLowerCase().includes("classic");
+              }
+              if (fit === "Oversized") {
+                return p.category === "Oversized" || p.title.toLowerCase().includes("oversized");
+              }
+              return p.category.toLowerCase().includes(fit.toLowerCase()) || p.title.toLowerCase().includes(fit.toLowerCase());
+            }).length;
+
+            return (
+              <label
+                key={fit}
+                className="flex cursor-pointer items-center justify-between py-1 px-1.5 rounded-lg hover:bg-zinc-50 text-xs text-zinc-700 hover:text-zinc-900 transition-colors"
+              >
+                <span className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggle("fits", fit)}
+                    className="rounded accent-emerald-600 cursor-pointer w-3.5 h-3.5"
+                  />
+                  <span className="font-medium">{fit === "Classic Fit" ? "Regular / Classic Fit" : fit}</span>
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterGroup>
 
       {/* Size Pills */}
       <FilterGroup title="Size">
@@ -98,7 +203,7 @@ export function FilterSidebar({
       <FilterGroup title="Max Price">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-zinc-900">
-            <span className="text-zinc-400">₹0</span>
+            <span className="text-zinc-400">?0</span>
             <span className="text-emerald-600 font-black">
               {formatInr(filters.maxPrice)}
             </span>
@@ -114,33 +219,6 @@ export function FilterSidebar({
             }
             className="w-full accent-emerald-600 cursor-pointer"
           />
-        </div>
-      </FilterGroup>
-
-      {/* Categories / Fabric */}
-      <FilterGroup title="Category & Fit">
-        <div className="space-y-1.5">
-          {categories.map((cat) => {
-            const checked = filters.categories.includes(cat);
-            const count = products.filter((p) => p.category === cat).length;
-            return (
-              <label
-                key={cat}
-                className="flex cursor-pointer items-center justify-between py-1 px-1.5 rounded-lg hover:bg-zinc-50 text-xs text-zinc-700 hover:text-zinc-900 transition-colors"
-              >
-                <span className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle("categories", cat)}
-                    className="rounded accent-emerald-600 cursor-pointer w-3.5 h-3.5"
-                  />
-                  <span className="font-medium">{cat}</span>
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono">({count})</span>
-              </label>
-            );
-          })}
         </div>
       </FilterGroup>
 
@@ -160,7 +238,7 @@ export function FilterSidebar({
                     : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900"
                 }`}
               >
-                {active && "✓ "}
+                {active && "? "}
                 {color}
               </button>
             );

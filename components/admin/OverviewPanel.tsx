@@ -10,11 +10,9 @@ import {
   ExternalLink, 
   Plus, 
   Palette, 
-  Eye, 
-  EyeOff,
   Edit2,
   CheckCircle2,
-  XCircle
+  UploadCloud
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock } from "@/lib/product";
@@ -24,6 +22,7 @@ interface OverviewPanelProps {
   onAddProduct: () => void;
   onEditProduct: (p: ProductDTO) => void;
   onGoToTheme: () => void;
+  onGoToMedia?: () => void;
 }
 
 export function OverviewPanel({
@@ -31,6 +30,7 @@ export function OverviewPanel({
   onAddProduct,
   onEditProduct,
   onGoToTheme,
+  onGoToMedia,
 }: OverviewPanelProps) {
   const stats = useMemo(() => {
     const totalProducts = products.length;
@@ -83,6 +83,17 @@ export function OverviewPanel({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {onGoToMedia && (
+            <button
+              type="button"
+              onClick={onGoToMedia}
+              className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-md active:scale-95 cursor-pointer focus:ring-2 focus:ring-amber-400 focus:outline-none"
+              aria-label="Upload and manage image assets"
+            >
+              <UploadCloud className="w-4 h-4" />
+              Upload Images
+            </button>
+          )}
           <button
             type="button"
             onClick={onAddProduct}

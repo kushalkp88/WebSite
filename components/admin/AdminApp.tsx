@@ -11,13 +11,16 @@ import {
   X, 
   CheckCircle2, 
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  FolderOpen,
+  UploadCloud
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import type { ThemePayload } from "@/lib/theme";
 import { OverviewPanel } from "./OverviewPanel";
 import { ProductManager } from "./ProductManager";
 import { ThemePanel } from "./ThemePanel";
+import { MediaManager } from "./MediaManager";
 
 interface Toast {
   id: string;
@@ -32,13 +35,14 @@ export function AdminApp({
   theme: ThemePayload;
   products: ProductDTO[];
 }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "theme">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "theme" | "media">("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   // Navigation targets passed down to child components
   const [targetEditProduct, setTargetEditProduct] = useState<ProductDTO | null>(null);
   const [targetCreateProduct, setTargetCreateProduct] = useState(false);
+  const [targetCreateImageUrl, setTargetCreateImageUrl] = useState<string | null>(null);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     const id = Math.random().toString(36).substring(2, 9);
@@ -52,17 +56,26 @@ export function AdminApp({
   function handleOverviewAddProduct() {
     setTargetEditProduct(null);
     setTargetCreateProduct(true);
+    setTargetCreateImageUrl(null);
     setActiveTab("products");
   }
 
   function handleOverviewEditProduct(p: ProductDTO) {
     setTargetCreateProduct(false);
     setTargetEditProduct(p);
+    setTargetCreateImageUrl(null);
     setActiveTab("products");
   }
 
   function handleOverviewGoToTheme() {
     setActiveTab("theme");
+  }
+
+  function handleCreateProductWithImage(imageUrl: string) {
+    setTargetEditProduct(null);
+    setTargetCreateImageUrl(imageUrl);
+    setTargetCreateProduct(true);
+    setActiveTab("products");
   }
 
   return (
@@ -155,7 +168,26 @@ export function AdminApp({
             </span>
           </button>
 
-          {/* Tab 3: Theme & Customizer */}
+          {/* Tab 3: Media & Image Uploads */}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "media"}
+            onClick={() => {
+              setActiveTab("media");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === "media"
+                ? "bg-zinc-800 text-white shadow-sm border border-zinc-700/60"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+            }`}
+          >
+            <FolderOpen className={`w-4 h-4 ${activeTab === "media" ? "text-amber-400" : ""}`} />
+            <span>Media & Uploads</span>
+          </button>
+
+          {/* Tab 4: Theme & Customizer */}
           <button
             type="button"
             role="tab"
@@ -215,12 +247,23 @@ export function AdminApp({
                   ? "Dashboard Overview"
                   : activeTab === "products"
                   ? "Product Catalog"
+                  : activeTab === "media"
+                  ? "Media & Uploads"
                   : "Theme Customizer"}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab("media")}
+              className="text-xs bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Upload Images</span>
+            </button>
+
             <Link
               href="/"
               target="_blank"
@@ -241,6 +284,7 @@ export function AdminApp({
               onAddProduct={handleOverviewAddProduct}
               onEditProduct={handleOverviewEditProduct}
               onGoToTheme={handleOverviewGoToTheme}
+              onGoToMedia={() => setActiveTab("media")}
             />
           )}
 
@@ -249,11 +293,20 @@ export function AdminApp({
               initial={products}
               editingTarget={targetEditProduct}
               creatingTarget={targetCreateProduct}
+              initialCreateImageUrl={targetCreateImageUrl}
               onClearTargets={() => {
                 setTargetEditProduct(null);
                 setTargetCreateProduct(false);
+                setTargetCreateImageUrl(null);
               }}
               onShowToast={showToast}
+            />
+          )}
+
+          {activeTab === "media" && (
+            <MediaManager
+              onShowToast={showToast}
+              onCreateProductWithImage={handleCreateProductWithImage}
             />
           )}
 
