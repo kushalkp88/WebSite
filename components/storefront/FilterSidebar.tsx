@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { ProductDTO, Size } from "@/lib/product";
 import { formatInr, SIZES } from "@/lib/product";
-import { RotateCcw, Flame, Sparkles } from "lucide-react";
+import { RotateCcw, Flame, Sparkles, Smile } from "lucide-react";
 
 export type Filters = {
   genders: string[];
@@ -85,12 +85,13 @@ export function FilterSidebar({
         )}
       </div>
 
-      {/* Gender / Department */}
-      <FilterGroup title="Department">
-        <div className="grid grid-cols-2 gap-2">
+      {/* Gender / Department / Section */}
+      <FilterGroup title="Section / Department">
+        <div className="grid grid-cols-3 gap-1.5">
           {[
             { id: "men", label: "Men", icon: Flame },
             { id: "women", label: "Women", icon: Sparkles },
+            { id: "kids", label: "Kids", icon: Smile },
           ].map((g) => {
             const active = filters.genders.includes(g.id);
             const Icon = g.icon;
@@ -99,7 +100,7 @@ export function FilterSidebar({
                 key={g.id}
                 type="button"
                 onClick={() => toggle("genders", g.id)}
-                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
+                className={`flex items-center justify-center gap-1 py-2 px-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
                   active
                     ? "bg-zinc-900 text-white border-zinc-900 shadow-2xs"
                     : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-900"

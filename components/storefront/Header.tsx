@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Flame,
   Palette,
+  Smile,
 } from "lucide-react";
 import { FormEvent, useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useShop } from "@/lib/cart-store";
@@ -72,6 +73,27 @@ const WOMEN_CATEGORIES: CategoryGroup[] = [
   },
 ];
 
+const KIDS_CATEGORIES: CategoryGroup[] = [
+  {
+    title: "Boys & Girls",
+    items: [
+      { label: "Regular", href: "/?gender=kids&type=plain&category=Classic%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=kids&type=plain&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=kids&type=plain&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=kids&type=plain&category=Hoodies#catalog" },
+    ],
+  },
+  {
+    title: "Printed & Graphic",
+    items: [
+      { label: "Regular", href: "/?gender=kids&type=printed&category=Classic%20Fit#catalog" },
+      { label: "Oversized", href: "/?gender=kids&type=printed&category=Oversized#catalog" },
+      { label: "Sweatshirts", href: "/?gender=kids&type=printed&category=Sweatshirts#catalog" },
+      { label: "Hoodies", href: "/?gender=kids&type=printed&category=Hoodies#catalog" },
+    ],
+  },
+];
+
 const emptySubscribe = () => () => {};
 
 export function Header({ overlay = false }: { overlay?: boolean }) {
@@ -85,11 +107,12 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
   const [query, setQuery] = useState(search);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<"men" | "women" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"men" | "women" | "kids" | null>(null);
 
   // Mobile accordion states
   const [mobileMenOpen, setMobileMenOpen] = useState(false);
   const [mobileWomenOpen, setMobileWomenOpen] = useState(false);
+  const [mobileKidsOpen, setMobileKidsOpen] = useState(false);
 
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -287,6 +310,73 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
             )}
           </div>
 
+          {/* KIDS Dropdown Trigger */}
+          <div
+            className="relative"
+            onMouseEnter={() => setActiveDropdown("kids")}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "kids" ? null : "kids")}
+              className={`flex items-center gap-1.5 py-2 hover:text-emerald-600 transition-colors cursor-pointer ${
+                activeDropdown === "kids" ? "text-emerald-600 font-extrabold" : ""
+              }`}
+            >
+              <span>KIDS</span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${
+                  activeDropdown === "kids" ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                }`}
+              />
+            </button>
+
+            {/* KIDS Mega Menu Dropdown */}
+            {activeDropdown === "kids" && (
+              <div
+                onMouseLeave={() => setActiveDropdown(null)}
+                className="absolute top-full left-0 mt-1 w-[460px] rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl animate-fade-down z-50"
+              >
+                <div className="grid grid-cols-2 gap-6">
+                  {KIDS_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-2.5">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-900 flex items-center gap-1.5 pb-1 border-b border-zinc-100">
+                        <Smile className="w-3.5 h-3.5 text-emerald-600" />
+                        {cat.title}
+                      </h4>
+                      <ul className="space-y-1">
+                        {cat.items.map((item) => (
+                          <li key={item.label}>
+                            <Link
+                              href={item.href}
+                              onClick={handleNavClick}
+                              className="group flex items-center justify-between text-xs font-bold text-zinc-600 hover:text-emerald-600 hover:translate-x-1 transition-all py-1.5 px-2 rounded-lg hover:bg-zinc-50"
+                            >
+                              <span>{item.label}</span>
+                              <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600 transition-opacity" />
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Strip */}
+                <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-end bg-zinc-50 -mx-5 -mb-5 p-3.5 rounded-b-2xl">
+                  <Link
+                    href="/?gender=kids#catalog"
+                    onClick={handleNavClick}
+                    className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
+                  >
+                    <span>View All Kids&apos; Drops</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* CUSTOMIZATION Direct Link */}
           <Link
             href="/customization"
@@ -458,6 +548,50 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
               {mobileWomenOpen && (
                 <div className="p-4 bg-white space-y-4 border-t border-zinc-200 animate-fade-in">
                   {WOMEN_CATEGORIES.map((cat) => (
+                    <div key={cat.title} className="space-y-2">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-zinc-400">
+                        {cat.title}
+                      </p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {cat.items.map((item) => (
+                          <Link
+                            key={item.label}
+                            href={item.href}
+                            onClick={handleNavClick}
+                            className="p-2 rounded-lg bg-zinc-50 hover:bg-emerald-50 text-xs font-bold text-zinc-800 hover:text-emerald-700 transition-colors"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* KIDS Accordion */}
+            <div className="border border-zinc-200 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileKidsOpen(!mobileKidsOpen)}
+                className="w-full flex items-center justify-between p-3.5 text-xs font-black uppercase tracking-widest text-zinc-900 bg-zinc-50 hover:bg-zinc-100"
+              >
+                <span className="flex items-center gap-2">
+                  <Smile className="w-4 h-4 text-emerald-600" />
+                  KIDS
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${
+                    mobileKidsOpen ? "rotate-180 text-emerald-600" : "text-zinc-400"
+                  }`}
+                />
+              </button>
+
+              {mobileKidsOpen && (
+                <div className="p-4 bg-white space-y-4 border-t border-zinc-200 animate-fade-in">
+                  {KIDS_CATEGORIES.map((cat) => (
                     <div key={cat.title} className="space-y-2">
                       <p className="text-[11px] font-black uppercase tracking-wider text-zinc-400">
                         {cat.title}

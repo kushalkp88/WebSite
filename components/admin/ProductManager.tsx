@@ -19,7 +19,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
-import { formatInr, isOutOfStock, totalStock, percentOff } from "@/lib/product";
+import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
 
 const AVAILABLE_BADGES = [
   "BEST SELLER",
@@ -31,8 +31,6 @@ const AVAILABLE_BADGES = [
   "RESTOCKED"
 ];
 
-const PRESET_CATEGORIES = ["Oversized", "Heavyweight", "Acid Wash", "Hoodies", "Accessories"];
-
 const blankProduct: Omit<ProductDTO, "id"> = {
   title: "",
   slug: "",
@@ -41,7 +39,8 @@ const blankProduct: Omit<ProductDTO, "id"> = {
   imageUrls: [""],
   badges: [],
   color: "Black",
-  category: "Oversized",
+  category: "Regular/Classic Fit",
+  section: "men",
   stockS: 10,
   stockM: 10,
   stockL: 10,
@@ -76,6 +75,7 @@ export function ProductManager({
   const [editing, setEditing] = useState<ProductDTO | null>(editingTarget);
   const [creating, setCreating] = useState(creatingTarget);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [stockFilter, setStockFilter] = useState<StockFilter>("ALL");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("ALL");
@@ -167,7 +167,12 @@ export function ProductManager({
           const matchTitle = p.title.toLowerCase().includes(q);
           const matchCategory = p.category.toLowerCase().includes(q);
           const matchColor = p.color.toLowerCase().includes(q);
-          if (!matchTitle && !matchCategory && !matchColor) return false;
+          const matchSection = (p.section ?? "").toLowerCase().includes(q);
+          if (!matchTitle && !matchCategory && !matchColor && !matchSection) return false;
+        }
+
+        if (sectionFilter !== "ALL" && (p.section ?? "men").toLowerCase() !== sectionFilter.toLowerCase()) {
+          return false;
         }
 
         if (categoryFilter !== "ALL" && p.category !== categoryFilter) {
@@ -201,7 +206,7 @@ export function ProductManager({
         if (sortBy === "TITLE") return a.title.localeCompare(b.title);
         return 0;
       });
-  }, [products, searchQuery, categoryFilter, stockFilter, visibilityFilter, sortBy]);
+  }, [products, searchQuery, sectionFilter, categoryFilter, stockFilter, visibilityFilter, sortBy]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -256,6 +261,22 @@ export function ProductManager({
 
           {/* Controls Right */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Section Dropdown */}
+            <div className="relative">
+              <select
+                value={sectionFilter}
+                onChange={(e) => setSectionFilter(e.target.value)}
+                className="appearance-none bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-medium rounded-xl pl-3 pr-8 py-2.5 focus:outline-none focus:ring-1 focus:ring-zinc-500 cursor-pointer"
+                aria-label="Filter by section"
+              >
+                <option value="ALL">All Sections</option>
+                <option value="men">Men</option>
+                <option value="women">Women</option>
+                <option value="kids">Kids</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             {/* Category Dropdown */}
             <div className="relative">
               <select
@@ -361,11 +382,12 @@ export function ProductManager({
             Showing <strong className="text-zinc-200">{filteredProducts.length}</strong> of{" "}
             <strong className="text-zinc-200">{products.length}</strong> products
           </span>
-          {(searchQuery || categoryFilter !== "ALL" || stockFilter !== "ALL" || visibilityFilter !== "ALL") && (
+          {(searchQuery || sectionFilter !== "ALL" || categoryFilter !== "ALL" || stockFilter !== "ALL" || visibilityFilter !== "ALL") && (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery("");
+                setSectionFilter("ALL");
                 setCategoryFilter("ALL");
                 setStockFilter("ALL");
                 setVisibilityFilter("ALL");
@@ -432,7 +454,10 @@ export function ProductManager({
                             <p className="font-semibold text-zinc-100 truncate text-sm">
                               {p.title}
                             </p>
-                            <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400">
+                            <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-400 flex-wrap">
+                              <span className="font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 text-[10px] uppercase tracking-wider">
+                                {p.section || "men"}
+                              </span>
                               <span className="font-medium text-zinc-300">{p.category}</span>
                               <span>•</span>
                               <span>{p.color}</span>
@@ -634,7 +659,12 @@ export function ProductManager({
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                      <span className="font-medium text-zinc-300">{p.category}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 text-[10px] uppercase tracking-wider">
+                          {p.section || "men"}
+                        </span>
+                        <span className="font-medium text-zinc-300">{p.category}</span>
+                      </div>
                       <span>{p.color}</span>
                     </div>
                     <h3 className="font-semibold text-zinc-100 text-sm line-clamp-1">
@@ -702,7 +732,7 @@ export function ProductManager({
         <ProductModal
           product={editing}
           initialImageUrl={initialCreateImageUrl}
-          categories={categories.length ? categories : PRESET_CATEGORIES}
+          categories={categories.length ? categories : [...PRODUCT_CATEGORIES]}
           onClose={() => {
             setCreating(false);
             setEditing(null);
@@ -1033,6 +1063,39 @@ function ProductModal({
                 />
               </div>
 
+              {/* Section Selector: Men, Women, Kids */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                  Section / Department <span className="text-red-400">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  {[
+                    { id: "men", label: "Men", subtitle: "Men's Drops" },
+                    { id: "women", label: "Women", subtitle: "Women's Drops" },
+                    { id: "kids", label: "Kids", subtitle: "Kids' Drops" },
+                  ].map((sec) => {
+                    const active = (form.section ?? "men").toLowerCase() === sec.id;
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, section: sec.id })}
+                        className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl border text-center transition-all cursor-pointer ${
+                          active
+                            ? "bg-white text-zinc-950 border-white shadow-md font-bold ring-2 ring-zinc-400"
+                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                        }`}
+                      >
+                        <span className="text-xs font-black uppercase tracking-wider">{sec.label}</span>
+                        <span className={`text-[10px] mt-0.5 ${active ? "text-zinc-700 font-semibold" : "text-zinc-500"}`}>
+                          {sec.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
@@ -1058,21 +1121,28 @@ function ProductModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    Category
+                    Category <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="text"
-                    list="category-suggestions"
-                    placeholder="e.g. Oversized, Acid Wash"
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none"
-                  />
-                  <datalist id="category-suggestions">
-                    {categories.map((c) => (
-                      <option key={c} value={c} />
-                    ))}
-                  </datalist>
+                  <div className="relative">
+                    <select
+                      value={form.category}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer"
+                    >
+                      {form.category &&
+                        !PRODUCT_CATEGORIES.includes(
+                          form.category as (typeof PRODUCT_CATEGORIES)[number]
+                        ) && (
+                          <option value={form.category}>{form.category}</option>
+                        )}
+                      {PRODUCT_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -1480,7 +1550,12 @@ function ProductModal({
                 {/* Details */}
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-zinc-400">
-                    <span>{form.category || "Category"}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-zinc-800 text-zinc-200 border border-zinc-700 px-1.5 py-0.5 rounded">
+                        {form.section || "men"}
+                      </span>
+                      <span>{form.category || "Category"}</span>
+                    </div>
                     <span>{form.color || "Color"}</span>
                   </div>
                   <h4 className="font-bold text-zinc-100 text-sm line-clamp-1">

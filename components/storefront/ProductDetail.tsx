@@ -148,6 +148,10 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           {/* Header Info */}
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
+              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-black border border-emerald-200">
+                {product.section || "men"}
+              </span>
+              <span>•</span>
               <span>{product.category}</span>
               <span>•</span>
               <span className="text-zinc-700">{product.color}</span>

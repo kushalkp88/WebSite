@@ -50,6 +50,7 @@ export async function POST(req: Request) {
         badges: JSON.stringify(body.badges ?? []),
         color: String(body.color ?? "Black"),
         category: String(body.category ?? "Oversized"),
+        section: String(body.section ?? "men").toLowerCase(),
         stockS: Number(body.stockS) || 0,
         stockM: Number(body.stockM) || 0,
         stockL: Number(body.stockL) || 0,
