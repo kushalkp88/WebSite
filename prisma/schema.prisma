@@ -18,10 +18,10 @@ model Product {
   color         String
   category      String
   section       String   @default("men")
-  stockS        Int      @default(0)
-  stockM        Int      @default(0)
-  stockL        Int      @default(0)
-  stockXL       Int      @default(0)
+  stockS        Int      @default(10)
+  stockM        Int      @default(10)
+  stockL        Int      @default(10)
+  stockXL       Int      @default(10)
   isVisible     Boolean  @default(true)
   rating        Float    @default(4.5)
   reviewCount   Int      @default(0)

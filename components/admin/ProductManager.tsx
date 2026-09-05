@@ -44,7 +44,7 @@ const blankProduct: Omit<ProductDTO, "id"> = {
   stockS: 10,
   stockM: 10,
   stockL: 10,
-  stockXL: 5,
+  stockXL: 10,
   isVisible: true,
   rating: 4.8,
   reviewCount: 12,
