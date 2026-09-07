@@ -91,15 +91,44 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
     return products.filter((p) => {
       if (q && !p.title.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
+      if (filters.genders.length && !filters.genders.includes((p.section ?? "men").toLowerCase())) return false;
       if (badge && !p.badges.includes(badge)) return false;
       if (filters.colors.length && !filters.colors.includes(p.color)) return false;
       if (filters.fits.length) {
         const matchFit = filters.fits.some((f) => {
-          if (f === "Classic Fit" || f === "Regular") {
-            return p.category === "Classic Fit" || p.title.toLowerCase().includes("classic");
+          if (
+            f === "Classic Fit" ||
+            f === "Regular" ||
+            f === "Regular/Classic Fit" ||
+            f === "Regular or Classic Fit"
+          ) {
+            return (
+              p.category === "Classic Fit" ||
+              p.category === "Regular" ||
+              p.category === "Regular/Classic Fit" ||
+              p.category === "Regular or Classic Fit" ||
+              p.title.toLowerCase().includes("classic") ||
+              p.title.toLowerCase().includes("regular")
+            );
           }
-          if (f === "Oversized") {
-            return p.category === "Oversized" || p.title.toLowerCase().includes("oversized");
+          if (f === "Oversized" || f === "Oversized Fit") {
+            return (
+              p.category === "Oversized" ||
+              p.category === "Oversized Fit" ||
+              p.title.toLowerCase().includes("oversized")
+            );
+          }
+          if (f === "Sweatshirts" || f === "Sweatshirt") {
+            return (
+              p.category.toLowerCase().includes("sweatshirt") ||
+              p.title.toLowerCase().includes("sweatshirt")
+            );
+          }
+          if (f === "Hoodies" || f === "Hoodie") {
+            return (
+              p.category.toLowerCase().includes("hoodie") ||
+              p.title.toLowerCase().includes("hoodie")
+            );
           }
           return p.category.toLowerCase().includes(f.toLowerCase()) || p.title.toLowerCase().includes(f.toLowerCase());
         });
@@ -157,14 +186,20 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
     const cat = params.get("category");
     const badge = params.get("badge");
 
-    if (gender && type && cat) {
-      return `${gender.toUpperCase()}'S ${type.toUpperCase()} • ${cat.toUpperCase()}`;
+    const genderPrefix = gender
+      ? gender.toLowerCase() === "kids"
+        ? "KIDS'"
+        : `${gender.toUpperCase()}'S`
+      : "";
+
+    if (genderPrefix && type && cat) {
+      return `${genderPrefix} ${type.toUpperCase()} • ${cat.toUpperCase()}`;
     }
-    if (gender && cat) {
-      return `${gender.toUpperCase()}'S ${cat.toUpperCase()}`;
+    if (genderPrefix && cat) {
+      return `${genderPrefix} ${cat.toUpperCase()}`;
     }
-    if (gender) {
-      return `${gender.toUpperCase()}'S COLLECTION`;
+    if (genderPrefix) {
+      return `${genderPrefix} COLLECTION`;
     }
     if (cat) return cat.toUpperCase();
     if (badge) return badge.toUpperCase();

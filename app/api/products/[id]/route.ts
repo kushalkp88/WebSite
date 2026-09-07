@@ -56,6 +56,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (body.badges != null) data.badges = JSON.stringify(body.badges);
     if (body.color != null) data.color = String(body.color);
     if (body.category != null) data.category = String(body.category);
+    if (body.section != null) data.section = String(body.section).toLowerCase();
     if (body.stockS != null) data.stockS = Number(body.stockS);
     if (body.stockM != null) data.stockM = Number(body.stockM);
     if (body.stockL != null) data.stockL = Number(body.stockL);

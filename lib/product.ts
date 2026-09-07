@@ -3,6 +3,19 @@ import type { Product } from "@prisma/client";
 export const SIZES = ["S", "M", "L", "XL"] as const;
 export type Size = (typeof SIZES)[number];
 
+export const PRODUCT_SECTIONS = ["men", "women", "kids"] as const;
+export type ProductSection = (typeof PRODUCT_SECTIONS)[number];
+
+export const PRODUCT_CATEGORIES = [
+  "Regular/Classic Fit",
+  "Oversized Fit",
+  "Boyfriend Fit",
+  "Crop Top",
+  "Sweatshirt",
+  "Hoodie",
+] as const;
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
 export type ProductDTO = {
   id: string;
   title: string;
@@ -13,6 +26,7 @@ export type ProductDTO = {
   badges: string[];
   color: string;
   category: string;
+  section: string;
   stockS: number;
   stockM: number;
   stockL: number;
@@ -65,6 +79,7 @@ export function serializeProduct(p: Product): ProductDTO {
     badges: JSON.parse(p.badges) as string[],
     color: p.color,
     category: p.category,
+    section: p.section ?? "men",
     stockS: p.stockS,
     stockM: p.stockM,
     stockL: p.stockL,

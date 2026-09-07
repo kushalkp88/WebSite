@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Heart, Star, Sparkles, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, Sparkles, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import {
   formatInr,
@@ -173,21 +173,6 @@ export function ProductCard({ product }: { product: ProductDTO }) {
           <Heart size={14} fill={wished ? "#ef4444" : "none"} className={wished ? "text-red-500" : ""} />
         </button>
 
-        {/* Rating Pill on Bottom-Left of Image */}
-        <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1 bg-black/65 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
-          <Star size={10} className="fill-amber-400 text-amber-400" />
-          <span>{product.rating.toFixed(1)}</span>
-          <span className="text-zinc-400 font-normal">{product.reviewCount}</span>
-        </div>
-
-        {/* Color Variant Count Pill on Bottom-Right */}
-        <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 bg-black/65 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold text-white shadow-xs">
-          <div className="flex -space-x-1 items-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-zinc-900 border border-white/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-800 border border-white/60" />
-          </div>
-          <span>{images.length > 1 ? `${images.length} views` : "11"}</span>
-        </div>
       </div>
 
       {/* Product Details Section Below Image */}
