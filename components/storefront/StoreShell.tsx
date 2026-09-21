@@ -99,10 +99,10 @@ export function StoreShell({
               Collections
             </p>
             <ul className="space-y-2 text-xs text-zinc-600">
-              <li><Link href="/?category=Oversized#catalog" className="hover:text-black transition-colors">Oversized Tees</Link></li>
-              <li><Link href="/?category=Acid%20Wash#catalog" className="hover:text-black transition-colors">Acid Wash Drops</Link></li>
-              <li><Link href="/?category=Heavyweight#catalog" className="hover:text-black transition-colors">240 GSM Heavyweight</Link></li>
-              <li><Link href="/?badge=BEST%20SELLER#catalog" className="hover:text-black transition-colors">Best Sellers</Link></li>
+              <li><Link href="/catalog?category=Oversized" className="hover:text-black transition-colors">Oversized Tees</Link></li>
+              <li><Link href="/catalog?category=Acid%20Wash" className="hover:text-black transition-colors">Acid Wash Drops</Link></li>
+              <li><Link href="/catalog?category=Heavyweight" className="hover:text-black transition-colors">240 GSM Heavyweight</Link></li>
+              <li><Link href="/catalog?badge=BEST%20SELLER" className="hover:text-black transition-colors">Best Sellers</Link></li>
             </ul>
           </div>
 
@@ -124,8 +124,9 @@ export function StoreShell({
             <Link href="/" className="inline-block">
               <img
                 src="/unhinged-logo.png"
-                alt="Unhinged"
-                className="h-16 sm:h-20 lg:h-24 w-auto object-contain hover:opacity-90 transition-opacity"
+                srcSet="/unhinged-logo-hires.png 2x"
+                alt="UNHINGED"
+                className="h-12 sm:h-16 lg:h-20 w-auto object-contain hover:opacity-90 transition-opacity"
               />
             </Link>
           </div>

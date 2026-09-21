@@ -66,9 +66,9 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
     setFilters((prev) => ({
       ...prev,
-      genders: gender ? [gender] : prev.genders,
-      types: type ? [type] : prev.types,
-      fits: cat ? [cat] : fit ? [fit] : prev.fits,
+      genders: gender ? [gender] : [],
+      types: type ? [type] : [],
+      fits: cat ? [cat] : fit ? [fit] : [],
     }));
   }
 

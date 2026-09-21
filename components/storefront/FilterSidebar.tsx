@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { ProductDTO, Size } from "@/lib/product";
 import { formatInr, SIZES } from "@/lib/product";
-import { RotateCcw, Flame, Sparkles, Smile } from "lucide-react";
+import { RotateCcw, Flame, Sparkles } from "lucide-react";
 
 export type Filters = {
   genders: string[];
@@ -87,11 +87,10 @@ export function FilterSidebar({
 
       {/* Gender / Department / Section */}
       <FilterGroup title="Section / Department">
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { id: "men", label: "Men", icon: Flame },
             { id: "women", label: "Women", icon: Sparkles },
-            { id: "kids", label: "Kids", icon: Smile },
           ].map((g) => {
             const active = filters.genders.includes(g.id);
             const Icon = g.icon;
