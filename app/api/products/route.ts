@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { serializeProduct } from "@/lib/product";
 
@@ -60,6 +61,9 @@ export async function POST(req: Request) {
         reviewCount: Number(body.reviewCount) || 0,
       },
     });
+
+    revalidatePath("/");
+    revalidatePath("/catalog");
 
     return NextResponse.json(serializeProduct(row), { status: 201 });
   } catch (err: unknown) {

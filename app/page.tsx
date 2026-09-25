@@ -6,7 +6,8 @@ import { GenderGatewayHero } from "@/components/storefront/GenderGatewayHero";
 import { BrandFeatures } from "@/components/storefront/BrandFeatures";
 import { TrustBar } from "@/components/storefront/TrustBar";
 
-export const dynamic = "force-dynamic";
+// Revalidate every 60 seconds (ISR) or on-demand via revalidatePath
+export const revalidate = 60;
 
 function HeroSkeleton() {
   return (
