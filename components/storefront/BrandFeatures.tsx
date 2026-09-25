@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Flame } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
-import { formatInr, percentOff } from "@/lib/product";
+import { formatInr, percentOff, isOutOfStock } from "@/lib/product";
 
 // Custom SVG Icons matching the reference image
 function CottonIcon({ className = "w-6 h-6" }: { className?: string }) {
@@ -226,6 +227,7 @@ export function BrandFeatures({ featuredProducts = [] }: { featuredProducts?: Pr
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
             {previewProducts.map((p) => {
               const off = percentOff(p);
+              const oos = isOutOfStock(p);
               const mainImg = p.imageUrls[0] || "/products/rack.jpg";
               return (
                 <Link
@@ -234,17 +236,22 @@ export function BrandFeatures({ featuredProducts = [] }: { featuredProducts?: Pr
                   className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-300 hover:border-zinc-400 hover:shadow-lg hover:-translate-y-1"
                 >
                   <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-100">
-                    <img
+                    <Image
                       src={mainImg}
                       alt={p.title}
-                      className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
-                      loading="lazy"
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 280px"
+                      className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
                     />
-                    {off > 0 && (
+                    {oos ? (
+                      <span className="absolute top-2.5 left-2.5 rounded-full bg-zinc-900/90 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-zinc-300 shadow-md">
+                        OUT OF STOCK
+                      </span>
+                    ) : off > 0 ? (
                       <span className="absolute top-2.5 left-2.5 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
                         {off}% OFF
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-1.5">
