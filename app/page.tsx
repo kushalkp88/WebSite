@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { serializeProduct } from "@/lib/product";
+import { serializeProduct, STOREFRONT_PRODUCT_SELECT } from "@/lib/product";
 import { StoreShell } from "@/components/storefront/StoreShell";
 import { GenderGatewayHero } from "@/components/storefront/GenderGatewayHero";
 import { BrandFeatures } from "@/components/storefront/BrandFeatures";
@@ -32,8 +32,13 @@ function HeroSkeleton() {
 
 export default async function HomePage() {
   const rows = await prisma.product.findMany({
-    where: { isVisible: true },
+    where: {
+      isVisible: true,
+      section: { in: ["men", "women"] },
+    },
+    select: STOREFRONT_PRODUCT_SELECT,
     orderBy: { createdAt: "desc" },
+    take: 8,
   });
   const products = rows.map(serializeProduct);
 

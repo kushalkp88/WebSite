@@ -113,8 +113,15 @@ export function Header({ overlay = false }: { overlay?: boolean }) {
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
-    setSearch(query);
-    router.push("/catalog");
+    const clean = query.trim().slice(0, 100);
+    setSearch(clean);
+    if (clean) {
+      const sp = new URLSearchParams();
+      sp.set("q", clean);
+      router.push(`/catalog?${sp.toString()}`);
+    } else {
+      router.push("/catalog");
+    }
     setMenuOpen(false);
     setActiveDropdown(null);
   }

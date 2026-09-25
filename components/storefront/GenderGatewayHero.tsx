@@ -11,7 +11,9 @@ export function GenderGatewayHero() {
   const currentGender = searchParams.get("gender")?.toLowerCase();
 
   function handleSelect(gender: "men" | "women") {
-    router.push(`/catalog?gender=${gender}`);
+    const sp = new URLSearchParams();
+    sp.set("gender", gender);
+    router.push(`/catalog?${sp.toString()}`);
   }
 
   return (

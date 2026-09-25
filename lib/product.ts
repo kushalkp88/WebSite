@@ -68,15 +68,64 @@ export function formatInr(n: number) {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
-export function serializeProduct(p: Product): ProductDTO {
+export const STOREFRONT_PRODUCT_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  price: true,
+  discountPrice: true,
+  imageUrls: true,
+  badges: true,
+  color: true,
+  category: true,
+  section: true,
+  stockS: true,
+  stockM: true,
+  stockL: true,
+  stockXL: true,
+  isVisible: true,
+  rating: true,
+  reviewCount: true,
+} as const;
+
+export type StorefrontProductRow = {
+  id: string;
+  title: string;
+  slug: string;
+  price: number;
+  discountPrice: number | null;
+  imageUrls: string;
+  badges: string;
+  color: string;
+  category: string;
+  section: string;
+  stockS: number;
+  stockM: number;
+  stockL: number;
+  stockXL: number;
+  isVisible: boolean;
+  rating: number;
+  reviewCount: number;
+};
+
+function safeParseJsonArray(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function serializeProduct(p: StorefrontProductRow | Product): ProductDTO {
   return {
     id: p.id,
     title: p.title,
     slug: p.slug,
     price: p.price,
     discountPrice: p.discountPrice,
-    imageUrls: JSON.parse(p.imageUrls) as string[],
-    badges: JSON.parse(p.badges) as string[],
+    imageUrls: safeParseJsonArray(p.imageUrls),
+    badges: safeParseJsonArray(p.badges),
     color: p.color,
     category: p.category,
     section: p.section ?? "men",

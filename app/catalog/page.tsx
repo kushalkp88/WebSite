@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { serializeProduct } from "@/lib/product";
+import { serializeProduct, STOREFRONT_PRODUCT_SELECT } from "@/lib/product";
 import { Catalog } from "@/components/storefront/Catalog";
 import { StoreShell } from "@/components/storefront/StoreShell";
 
@@ -47,7 +47,11 @@ function CatalogSkeleton() {
 
 export default async function CatalogPage() {
   const rows = await prisma.product.findMany({
-    where: { isVisible: true },
+    where: {
+      isVisible: true,
+      section: { in: ["men", "women"] },
+    },
+    select: STOREFRONT_PRODUCT_SELECT,
     orderBy: { createdAt: "desc" },
   });
   const products = rows.map(serializeProduct);
