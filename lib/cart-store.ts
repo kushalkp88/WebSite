@@ -37,6 +37,7 @@ type ShopState = {
   addToCart: (item: CartItem) => void;
   setQty: (productId: string, size: Size, qty: number) => void;
   removeFromCart: (productId: string, size: Size) => void;
+  clearCart: () => void;
   toggleWishlist: (item: WishlistItem) => void;
 };
 
@@ -54,7 +55,7 @@ export const useShop = create<ShopState>()(
       openWishlist: () => set({ wishlistOpen: true }),
       closeWishlist: () => set({ wishlistOpen: false }),
       addToCart: (item) => {
-        if (item.maxStock <= 0) return;
+        if (item.maxStock <= 0 || item.qty <= 0) return;
         const existing = get().cart.find(
           (i) => i.productId === item.productId && i.size === item.size,
         );
@@ -98,6 +99,7 @@ export const useShop = create<ShopState>()(
             (i) => !(i.productId === productId && i.size === size),
           ),
         }),
+      clearCart: () => set({ cart: [] }),
       toggleWishlist: (item) => {
         const has = get().wishlist.some((w) => w.productId === item.productId);
         set({

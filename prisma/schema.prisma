@@ -39,3 +39,39 @@ model SiteSettings {
   bannerBg    String
   bannerText  String
 }
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  subtotal        Int
+  discountAmount  Int         @default(0)
+  shippingFee     Int         @default(0)
+  totalAmount     Int
+  couponCode      String?
+  status          String      @default("PAID")
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+  shippingAddress String?
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+
+  @@index([orderNumber])
+  @@index([createdAt(sort: Desc)])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  title     String
+  slug      String
+  size      String
+  price     Int
+  qty       Int
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
