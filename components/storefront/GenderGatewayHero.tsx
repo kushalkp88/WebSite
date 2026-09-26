@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
@@ -10,7 +11,9 @@ export function GenderGatewayHero() {
   const currentGender = searchParams.get("gender")?.toLowerCase();
 
   function handleSelect(gender: "men" | "women") {
-    router.push(`/catalog?gender=${gender}`);
+    const sp = new URLSearchParams();
+    sp.set("gender", gender);
+    router.push(`/catalog?${sp.toString()}`);
   }
 
   return (
@@ -80,11 +83,13 @@ export function GenderGatewayHero() {
               {/* Inner Circle Clipping Container */}
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Male Model Image */}
-                <img
+                <Image
                   src="/hero/men-model.jpg"
                   alt="Men's Streetwear Collection"
-                  className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
-                  loading="eager"
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
+                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 />
 
                 {/* Vignette Overlay for Photographic Depth */}
@@ -128,11 +133,13 @@ export function GenderGatewayHero() {
               {/* Inner Circle Clipping Container */}
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Female Model Image */}
-                <img
+                <Image
                   src="/hero/women-model.jpg"
                   alt="Women's Streetwear Collection"
-                  className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
-                  loading="eager"
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
+                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 />
 
                 {/* Vignette Overlay for Photographic Depth */}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { serializeProduct } from "@/lib/product";
 
@@ -66,6 +67,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (body.reviewCount != null) data.reviewCount = Number(body.reviewCount);
 
     const row = await prisma.product.update({ where: { id }, data });
+    revalidatePath("/");
+    revalidatePath("/catalog");
     return NextResponse.json(serializeProduct(row));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to update product";
@@ -77,6 +80,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     await prisma.product.delete({ where: { id } });
+    revalidatePath("/");
+    revalidatePath("/catalog");
     return NextResponse.json({ success: true, ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to delete product";

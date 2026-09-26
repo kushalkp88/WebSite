@@ -17,6 +17,7 @@ const instrument = Instrument_Serif({
 });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://unhinged.style"),
   title: "UNHINGED — Oversized Streetwear & Graphic Drops",
   description: "Oversized graphic tees. Loud prints. Unhinged streetwear energy.",
 };

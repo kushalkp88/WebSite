@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   SlidersHorizontal,
   ArrowUpDown,
@@ -30,17 +30,37 @@ const SORT_OPTIONS = [
   { id: "rating", label: "Highest Rated" },
 ];
 
+const VALID_STOREFRONT_GENDERS = new Set(["men", "women"]);
+
+function sanitizeParam(val: string | null, maxLen = 100): string | null {
+  if (!val) return null;
+  const cleaned = val.trim().slice(0, maxLen);
+  return cleaned || null;
+}
+
 export function Catalog({ initial }: { initial: ProductDTO[] }) {
+  const router = useRouter();
   const params = useSearchParams();
   const search = useShop((s) => s.search);
   const setSearch = useShop((s) => s.setSearch);
   const [products, setProducts] = useState(initial);
   const [sort, setSort] = useState("featured");
+
+  const queryQ = sanitizeParam(params.get("q") ?? params.get("search"));
+
+  // Sync search param into global search state
+  useEffect(() => {
+    if (queryQ !== null && queryQ !== search) {
+      setSearch(queryQ);
+    }
+  }, [queryQ, search, setSearch]);
+
   const [filters, setFilters] = useState<Filters>(() => {
-    const cat = params.get("category");
-    const gender = params.get("gender");
-    const type = params.get("type");
-    const fit = params.get("fit");
+    const cat = sanitizeParam(params.get("category"));
+    const rawGender = sanitizeParam(params.get("gender"))?.toLowerCase();
+    const gender = rawGender && VALID_STOREFRONT_GENDERS.has(rawGender) ? rawGender : null;
+    const type = sanitizeParam(params.get("type"));
+    const fit = sanitizeParam(params.get("fit"));
 
     return {
       ...EMPTY_FILTERS,
@@ -59,10 +79,11 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
   if (currentParamsString !== prevParamsString) {
     setPrevParamsString(currentParamsString);
-    const cat = params.get("category");
-    const gender = params.get("gender");
-    const type = params.get("type");
-    const fit = params.get("fit");
+    const cat = sanitizeParam(params.get("category"));
+    const rawGender = sanitizeParam(params.get("gender"))?.toLowerCase();
+    const gender = rawGender && VALID_STOREFRONT_GENDERS.has(rawGender) ? rawGender : null;
+    const type = sanitizeParam(params.get("type"));
+    const fit = sanitizeParam(params.get("fit"));
 
     setFilters((prev) => ({
       ...prev,
@@ -86,10 +107,14 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
   }, []);
 
   const filtered = useMemo(() => {
-    const badge = params.get("badge");
-    const q = search.trim().toLowerCase();
+    const badge = sanitizeParam(params.get("badge"));
+    const rawQ = queryQ ?? search;
+    const q = rawQ.trim().toLowerCase();
 
     return products.filter((p) => {
+      // Actively exclude deprecated kids department records from storefront
+      if (p.section?.toLowerCase() === "kids") return false;
+
       if (q && !p.title.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
       if (filters.genders.length && !filters.genders.includes((p.section ?? "men").toLowerCase())) return false;
       if (badge && !p.badges.includes(badge)) return false;
@@ -167,7 +192,7 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       }
       return true;
     });
-  }, [products, filters, search, params]);
+  }, [products, filters, search, queryQ, params]);
 
   const activeFilterCount =
     filters.genders.length +
@@ -181,16 +206,13 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
     SORT_OPTIONS.find((o) => o.id === sort)?.label ?? "Featured";
 
   const categoryName = useMemo(() => {
-    const gender = params.get("gender");
-    const type = params.get("type");
-    const cat = params.get("category");
-    const badge = params.get("badge");
+    const rawGender = sanitizeParam(params.get("gender"))?.toLowerCase();
+    const gender = rawGender && VALID_STOREFRONT_GENDERS.has(rawGender) ? rawGender : null;
+    const type = sanitizeParam(params.get("type"));
+    const cat = sanitizeParam(params.get("category"));
+    const badge = sanitizeParam(params.get("badge"));
 
-    const genderPrefix = gender
-      ? gender.toLowerCase() === "kids"
-        ? "KIDS'"
-        : `${gender.toUpperCase()}'S`
-      : "";
+    const genderPrefix = gender ? `${gender.toUpperCase()}'S` : "";
 
     if (genderPrefix && type && cat) {
       return `${genderPrefix} ${type.toUpperCase()} • ${cat.toUpperCase()}`;
@@ -231,7 +253,16 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
               </span>
               <button
                 type="button"
-                onClick={() => setSearch("")}
+                onClick={() => {
+                  setSearch("");
+                  if (params.get("q") || params.get("search")) {
+                    const sp = new URLSearchParams(params.toString());
+                    sp.delete("q");
+                    sp.delete("search");
+                    const qs = sp.toString();
+                    router.push(qs ? `/catalog?${qs}` : "/catalog");
+                  }
+                }}
                 className="text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <X className="w-3 h-3" /> Clear

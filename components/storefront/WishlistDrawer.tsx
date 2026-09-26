@@ -1,33 +1,24 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { Heart, Trash2, X, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { formatInr } from "@/lib/product";
 import { useShop } from "@/lib/cart-store";
 
 export function WishlistDrawer() {
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
   const open = useShop((s) => s.wishlistOpen);
   const close = useShop((s) => s.closeWishlist);
   const wishlist = useShop((s) => s.wishlist);
   const toggleWishlist = useShop((s) => s.toggleWishlist);
-  const addToCart = useShop((s) => s.addToCart);
-  const openBag = useShop((s) => s.openBag);
 
-  function moveToBag(item: typeof wishlist[number]) {
-    addToCart({
-      productId: item.productId,
-      slug: item.slug,
-      title: item.title,
-      image: item.image,
-      price: item.price,
-      size: "M", // default size
-      qty: 1,
-      maxStock: 10,
-    });
-    toggleWishlist(item);
-    close();
-    openBag();
-  }
+  if (!isHydrated) return null;
 
   return (
     <div
@@ -119,14 +110,14 @@ export function WishlistDrawer() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => moveToBag(item)}
+                  <Link
+                    href={`/product/${item.slug}`}
+                    onClick={close}
                     className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl py-2.5 text-xs font-black tracking-wider text-white bg-zinc-900 hover:bg-black uppercase transition-all shadow-md active:scale-95 cursor-pointer"
                   >
                     <ShoppingBag size={12} />
-                    <span>Move to Bag</span>
-                  </button>
+                    <span>Select Size & Add</span>
+                  </Link>
                 </div>
               </li>
             ))}
