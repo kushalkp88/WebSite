@@ -17,7 +17,10 @@ import {
   ChevronDown,
   Upload,
   FolderOpen,
-  Sparkles
+  Sparkles,
+  Copy,
+  Shirt,
+  Check
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
@@ -833,6 +836,26 @@ interface ProductModalProps {
   onShowToast?: (msg: string, type?: "success" | "error") => void;
 }
 
+type DeptType = "women" | "men" | "unisex" | "kids";
+
+interface DeptConfig {
+  category: string;
+  color: string;
+  price: number;
+  discountPrice: number | null;
+  stockS: number;
+  stockM: number;
+  stockL: number;
+  stockXL: number;
+  rating: number;
+  reviewCount: number;
+}
+
+interface ImageSlot {
+  url: string;
+  department: DeptType;
+}
+
 function ProductModal({
   product,
   categories,
@@ -842,22 +865,93 @@ function ProductModal({
   onShowToast,
 }: ProductModalProps) {
   const isEditing = Boolean(product);
-  const [form, setForm] = useState(() => {
-    const base = {
-      ...blankProduct,
-      ...product,
-      imageUrls: product?.imageUrls?.length ? product.imageUrls : [""],
-    };
-    if (!product && initialImageUrl) {
-      base.imageUrls = [initialImageUrl];
+
+  // Base print info
+  const [title, setTitle] = useState(product?.title ?? "");
+  const [slug, setSlug] = useState(product?.slug ?? "");
+  const [badges, setBadges] = useState<string[]>(() => {
+    if (!product?.badges) return [];
+    try {
+      return typeof product.badges === "string" ? JSON.parse(product.badges) : product.badges;
+    } catch {
+      return [];
     }
-    return base;
   });
+  const [isVisible, setIsVisible] = useState(product?.isVisible ?? true);
+
+  // Active department currently being edited in form sections
+  const initialDept: DeptType = (product?.section?.toLowerCase() as DeptType) || "women";
+  const [activeDept, setActiveDept] = useState<DeptType>(initialDept);
+
+  // Department configurations
+  const [deptConfigs, setDeptConfigs] = useState<Record<DeptType, DeptConfig>>(() => ({
+    women: {
+      category: product?.section === "women" ? product.category : "Boyfriend Fit",
+      color: product?.section === "women" ? product.color : (product?.color ?? ""),
+      price: product?.price ?? 1499,
+      discountPrice: product?.discountPrice ?? 599,
+      stockS: product?.stockS ?? 10,
+      stockM: product?.stockM ?? 10,
+      stockL: product?.stockL ?? 10,
+      stockXL: product?.stockXL ?? 10,
+      rating: product?.rating ?? 4.5,
+      reviewCount: product?.reviewCount ?? 0,
+    },
+    men: {
+      category: product?.section === "men" ? product.category : "Oversized Fit",
+      color: product?.section === "men" ? product.color : (product?.color ?? ""),
+      price: product?.price ?? 1499,
+      discountPrice: product?.discountPrice ?? 599,
+      stockS: product?.stockS ?? 10,
+      stockM: product?.stockM ?? 10,
+      stockL: product?.stockL ?? 10,
+      stockXL: product?.stockXL ?? 10,
+      rating: product?.rating ?? 4.5,
+      reviewCount: product?.reviewCount ?? 0,
+    },
+    unisex: {
+      category: product?.section === "unisex" ? product.category : "Oversized Fit",
+      color: product?.color ?? "",
+      price: product?.price ?? 1499,
+      discountPrice: product?.discountPrice ?? 599,
+      stockS: 10,
+      stockM: 10,
+      stockL: 10,
+      stockXL: 10,
+      rating: 4.5,
+      reviewCount: 0,
+    },
+    kids: {
+      category: product?.section === "kids" ? product.category : "Regular/Classic Fit",
+      color: product?.color ?? "",
+      price: product?.price ?? 999,
+      discountPrice: product?.discountPrice ?? 499,
+      stockS: 10,
+      stockM: 10,
+      stockL: 10,
+      stockXL: 10,
+      rating: 4.5,
+      reviewCount: 0,
+    },
+  }));
+
+  // Image slots with department assignment
+  const [images, setImages] = useState<ImageSlot[]>(() => {
+    if (product?.imageUrls?.length) {
+      return product.imageUrls.map((url) => ({
+        url,
+        department: initialDept,
+      }));
+    }
+    if (initialImageUrl) {
+      return [{ url: initialImageUrl, department: initialDept }];
+    }
+    return [{ url: "", department: initialDept }];
+  });
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [creationMode, setCreationMode] = useState<"standard" | "split_both">("standard");
-  const [menFit, setMenFit] = useState("Oversized Fit");
-  const [womenFit, setWomenFit] = useState("Boyfriend Fit");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isDragOverImages, setIsDragOverImages] = useState(false);
   const [activeSlotTarget, setActiveSlotTarget] = useState<number | null>(null);
@@ -873,12 +967,60 @@ function ProductModal({
   }, [onClose]);
 
   function autoSlug() {
-    const slug = form.title
+    const s = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
       .slice(0, 60);
-    setForm((f) => ({ ...f, slug }));
+    setSlug(s);
+  }
+
+  function selectImageSlot(idx: number) {
+    setActiveImageIndex(idx);
+    const slot = images[idx];
+    if (slot?.department) {
+      setActiveDept(slot.department);
+    }
+  }
+
+  function changeSlotDepartment(idx: number, newDept: DeptType) {
+    const next = [...images];
+    next[idx] = { ...next[idx], department: newDept };
+    setImages(next);
+    setActiveImageIndex(idx);
+    setActiveDept(newDept);
+  }
+
+  function switchActiveDept(dept: DeptType) {
+    setActiveDept(dept);
+    const foundIdx = images.findIndex((img) => img.department === dept && img.url.trim() !== "");
+    if (foundIdx !== -1) {
+      setActiveImageIndex(foundIdx);
+    }
+  }
+
+  function copyConfigFrom(sourceDept: DeptType) {
+    const src = deptConfigs[sourceDept];
+    setDeptConfigs((prev) => ({
+      ...prev,
+      [activeDept]: {
+        ...prev[activeDept],
+        price: src.price,
+        discountPrice: src.discountPrice,
+        stockS: src.stockS,
+        stockM: src.stockM,
+        stockL: src.stockL,
+        stockXL: src.stockXL,
+      },
+    }));
+    onShowToast?.(`Copied pricing and stock from ${sourceDept.toUpperCase()}!`, "success");
+  }
+
+  function updateActiveDeptConfig(patch: Partial<DeptConfig>) {
+    setDeptConfigs((prev) => ({
+      ...prev,
+      [activeDept]: { ...prev[activeDept], ...patch },
+    }));
   }
 
   async function handleUploadFiles(files: FileList | File[], targetSlot?: number | null) {
@@ -913,20 +1055,28 @@ function ProductModal({
       if (uploadedUrls.length === 0) return;
 
       if (targetSlot !== undefined && targetSlot !== null && targetSlot >= 0) {
-        const next = [...form.imageUrls];
-        next[targetSlot] = uploadedUrls[0];
+        const next = [...images];
+        next[targetSlot] = { url: uploadedUrls[0], department: activeDept };
         if (uploadedUrls.length > 1) {
-          next.push(...uploadedUrls.slice(1));
+          uploadedUrls.slice(1).forEach((u) => {
+            next.push({ url: u, department: activeDept });
+          });
         }
-        setForm((f) => ({ ...f, imageUrls: next }));
+        setImages(next);
+        setActiveImageIndex(targetSlot);
       } else {
-        const existingNonEmpty = form.imageUrls.filter((u) => u.trim() !== "");
-        const combined = [...existingNonEmpty, ...uploadedUrls];
-        setForm((f) => ({ ...f, imageUrls: combined.length ? combined : [""] }));
+        const existingValid = images.filter((img) => img.url.trim() !== "");
+        const newSlots: ImageSlot[] = uploadedUrls.map((u) => ({
+          url: u,
+          department: activeDept,
+        }));
+        const combined = [...existingValid, ...newSlots];
+        setImages(combined.length ? combined : [{ url: "", department: activeDept }]);
+        setActiveImageIndex(existingValid.length);
       }
 
       onShowToast?.(
-        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} from your computer!`,
+        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} to ${activeDept.toUpperCase()} drop!`,
         "success"
       );
     } catch (err: unknown) {
@@ -941,78 +1091,113 @@ function ProductModal({
     }
   }
 
-  function handleImageChange(idx: number, val: string) {
-    const next = [...form.imageUrls];
-    next[idx] = val;
-    setForm({ ...form, imageUrls: next });
+  function handleImageUrlChange(idx: number, val: string) {
+    const next = [...images];
+    next[idx] = { ...next[idx], url: val };
+    setImages(next);
   }
 
   function addImageSlot() {
-    setForm({ ...form, imageUrls: [...form.imageUrls, ""] });
+    const next = [...images, { url: "", department: activeDept }];
+    setImages(next);
+    setActiveImageIndex(next.length - 1);
   }
 
   function removeImageSlot(idx: number) {
-    if (form.imageUrls.length <= 1) {
-      setForm({ ...form, imageUrls: [""] });
+    if (images.length <= 1) {
+      setImages([{ url: "", department: activeDept }]);
+      setActiveImageIndex(0);
     } else {
-      setForm({
-        ...form,
-        imageUrls: form.imageUrls.filter((_, i) => i !== idx),
-      });
+      const next = images.filter((_, i) => i !== idx);
+      setImages(next);
+      setActiveImageIndex(Math.min(activeImageIndex, next.length - 1));
     }
   }
 
   function toggleBadge(b: string) {
-    setForm((f) => ({
-      ...f,
-      badges: f.badges.includes(b)
-        ? f.badges.filter((x) => x !== b)
-        : [...f.badges, b],
-    }));
+    setBadges((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   }
+
+  const activeSlot = images[activeImageIndex];
+  const previewImageUrl =
+    activeSlot?.url?.trim() ||
+    images.find((img) => img.department === activeDept && img.url.trim())?.url ||
+    images.find((img) => img.url.trim())?.url ||
+    "";
+
+  const currentConfig = deptConfigs[activeDept];
+  const currentTotalStock =
+    currentConfig.stockS + currentConfig.stockM + currentConfig.stockL + currentConfig.stockXL;
+  const currentDiscountPct =
+    currentConfig.discountPrice && currentConfig.discountPrice < currentConfig.price
+      ? Math.round((1 - currentConfig.discountPrice / currentConfig.price) * 100)
+      : 0;
+
+  const validImages = images.filter((img) => img.url.trim() !== "");
+  const menImagesCount = validImages.filter((img) => img.department === "men").length;
+  const womenImagesCount = validImages.filter((img) => img.department === "women").length;
+  const isDualDrop = !isEditing && menImagesCount > 0 && womenImagesCount > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!form.title.trim()) {
+    if (!title.trim()) {
       setErrorMsg("Product title is required");
-      return;
-    }
-    if (form.price <= 0) {
-      setErrorMsg("Price must be greater than 0");
       return;
     }
 
     setBusy(true);
 
-    const payload = {
-      ...form,
-      imageUrls: form.imageUrls.map((u) => u.trim()).filter(Boolean),
-      slug: form.slug.trim() || undefined,
-    };
+    const baseSlug =
+      slug.trim() ||
+      title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 50);
 
-    if (creationMode === "split_both" && !product) {
+    if (isDualDrop) {
       try {
-        const baseSlug =
-          form.slug.trim() ||
-          form.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)/g, "")
-            .slice(0, 50);
+        const menImgs = validImages.filter((img) => img.department === "men").map((i) => i.url);
+        const womenImgs = validImages.filter((img) => img.department === "women").map((i) => i.url);
 
         const menPayload = {
-          ...payload,
-          section: "men",
-          category: menFit,
+          title,
           slug: `${baseSlug}-men`,
+          section: "men",
+          category: deptConfigs.men.category,
+          color: deptConfigs.men.color.trim() || "Standard",
+          price: Number(deptConfigs.men.price) || 599,
+          discountPrice: deptConfigs.men.discountPrice ? Number(deptConfigs.men.discountPrice) : null,
+          stockS: Number(deptConfigs.men.stockS) || 0,
+          stockM: Number(deptConfigs.men.stockM) || 0,
+          stockL: Number(deptConfigs.men.stockL) || 0,
+          stockXL: Number(deptConfigs.men.stockXL) || 0,
+          rating: Number(deptConfigs.men.rating) || 4.5,
+          reviewCount: Number(deptConfigs.men.reviewCount) || 0,
+          imageUrls: menImgs.length ? menImgs : validImages.map((i) => i.url),
+          badges,
+          isVisible,
         };
+
         const womenPayload = {
-          ...payload,
-          section: "women",
-          category: womenFit,
+          title,
           slug: `${baseSlug}-women`,
+          section: "women",
+          category: deptConfigs.women.category,
+          color: deptConfigs.women.color.trim() || "Standard",
+          price: Number(deptConfigs.women.price) || 599,
+          discountPrice: deptConfigs.women.discountPrice ? Number(deptConfigs.women.discountPrice) : null,
+          stockS: Number(deptConfigs.women.stockS) || 0,
+          stockM: Number(deptConfigs.women.stockM) || 0,
+          stockL: Number(deptConfigs.women.stockL) || 0,
+          stockXL: Number(deptConfigs.women.stockXL) || 0,
+          rating: Number(deptConfigs.women.rating) || 4.5,
+          reviewCount: Number(deptConfigs.women.reviewCount) || 0,
+          imageUrls: womenImgs.length ? womenImgs : validImages.map((i) => i.url),
+          badges,
+          isVisible,
         };
 
         const [resMen, resWomen] = await Promise.all([
@@ -1029,11 +1214,11 @@ function ProductModal({
         ]);
 
         if (!resMen.ok || !resWomen.ok) {
-          throw new Error("Failed to create both drops. Please check title and fields.");
+          throw new Error("Failed to publish both drops. Please check title and fields.");
         }
 
         onShowToast?.(
-          `Created both Men's (${menFit}) & Women's (${womenFit}) drops for "${form.title}"!`,
+          `Published both Men's (${deptConfigs.men.category}) & Women's (${deptConfigs.women.category}) drops for "${title}"!`,
           "success"
         );
         onSaved();
@@ -1046,12 +1231,35 @@ function ProductModal({
       return;
     }
 
+    // Single product flow
     try {
+      const deptImgs = validImages.filter((img) => img.department === activeDept).map((i) => i.url);
+      const finalImgs = deptImgs.length ? deptImgs : validImages.map((i) => i.url);
+
+      const singlePayload = {
+        title,
+        slug: baseSlug,
+        section: activeDept,
+        category: currentConfig.category,
+        color: currentConfig.color.trim() || "Standard",
+        price: Number(currentConfig.price) || 599,
+        discountPrice: currentConfig.discountPrice ? Number(currentConfig.discountPrice) : null,
+        stockS: Number(currentConfig.stockS) || 0,
+        stockM: Number(currentConfig.stockM) || 0,
+        stockL: Number(currentConfig.stockL) || 0,
+        stockXL: Number(currentConfig.stockXL) || 0,
+        rating: Number(currentConfig.rating) || 4.5,
+        reviewCount: Number(currentConfig.reviewCount) || 0,
+        imageUrls: finalImgs,
+        badges,
+        isVisible,
+      };
+
       const url = product ? `/api/products/${product.id}` : "/api/products";
       const res = await fetch(url, {
         method: product ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(singlePayload),
       });
 
       if (!res.ok) {
@@ -1064,6 +1272,10 @@ function ProductModal({
         throw new Error(err.error || "Failed to save product");
       }
 
+      onShowToast?.(
+        isEditing ? `Updated "${title}" successfully!` : `Created product "${title}"!`,
+        "success"
+      );
       onSaved();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -1072,12 +1284,6 @@ function ProductModal({
       setBusy(false);
     }
   }
-
-  const currentTotalStock = form.stockS + form.stockM + form.stockL + form.stockXL;
-  const currentDiscountPct =
-    form.discountPrice && form.discountPrice < form.price
-      ? Math.round((1 - form.discountPrice / form.price) * 100)
-      : 0;
 
   return (
     <div
@@ -1090,11 +1296,16 @@ function ProductModal({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/60">
           <div>
-            <h2 id="product-modal-title" className="text-lg font-bold text-white">
-              {isEditing && product ? `Edit "${product.title}"` : "Create New Product"}
+            <h2 id="product-modal-title" className="text-lg font-bold text-white flex items-center gap-2">
+              {isEditing && product ? `Edit "${product.title}"` : "Add Print / Product Drop"}
+              {isDualDrop && (
+                <span className="text-[11px] font-black uppercase bg-amber-400 text-zinc-950 px-2 py-0.5 rounded-full shadow-sm">
+                  ⚡ Dual Drop (Men & Women)
+                </span>
+              )}
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Fill in product details, pricing, size stock breakdown, and image assets.
+              Add photos for Men & Women of the same print in one place. Switch drops or click any photo to configure its details.
             </p>
           </div>
           <button
@@ -1118,249 +1329,176 @@ function ProductModal({
               </div>
             )}
 
+            {/* Department / Drop Focus Switcher */}
+            <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-2xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                  Select Drop to Edit / Preview:
+                </span>
+                {isDualDrop ? (
+                  <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" /> Both Men & Women drops active
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-zinc-500">
+                    Click to switch active department
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(["women", "men", "unisex", "kids"] as const).map((d) => {
+                  const count = validImages.filter((i) => i.department === d).length;
+                  const isActive = activeDept === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => switchActiveDept(d)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isActive
+                          ? d === "women"
+                            ? "bg-rose-950/70 border-rose-500 text-rose-100 ring-2 ring-rose-500/40 shadow-lg"
+                            : d === "men"
+                            ? "bg-sky-950/70 border-sky-500 text-sky-100 ring-2 ring-sky-500/40 shadow-lg"
+                            : d === "unisex"
+                            ? "bg-purple-950/70 border-purple-500 text-purple-100 ring-2 ring-purple-500/40 shadow-lg"
+                            : "bg-zinc-800 border-white text-white ring-2 ring-white/30 shadow-lg"
+                          : "bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-black uppercase tracking-wider">
+                          {d === "women" ? "👩 Women" : d === "men" ? "👨 Men" : d === "unisex" ? "🚻 Unisex" : "🧒 Kids"}
+                        </span>
+                        {isActive && (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        )}
+                      </div>
+                      <span className="text-[11px] opacity-80 mt-1 font-medium">
+                        {count} photo{count === 1 ? "" : "s"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Department Focus Banner */}
+              <div
+                className={`p-2.5 rounded-xl text-xs flex items-center justify-between border ${
+                  activeDept === "women"
+                    ? "bg-rose-950/40 border-rose-800/60 text-rose-200"
+                    : activeDept === "men"
+                    ? "bg-sky-950/40 border-sky-800/60 text-sky-200"
+                    : activeDept === "unisex"
+                    ? "bg-purple-950/40 border-purple-800/60 text-purple-200"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-300"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Shirt className="w-4 h-4 shrink-0" />
+                  <span>
+                    Editing <strong>{activeDept.toUpperCase()}</strong> drop details (Category, Color, Price, Stock & Preview).
+                  </span>
+                </div>
+                {(activeDept === "men" || activeDept === "women") && (
+                  <button
+                    type="button"
+                    onClick={() => copyConfigFrom(activeDept === "men" ? "women" : "men")}
+                    className="text-[11px] font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer bg-black/40 px-2 py-1 rounded border border-amber-400/30 hover:border-amber-400/60 transition-all shrink-0"
+                    title={`Copy pricing & size stock from ${activeDept === "men" ? "Women" : "Men"}`}
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy from {activeDept === "men" ? "Women" : "Men"}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* General Info */}
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                1. General Information
+                1. General Information ({activeDept.toUpperCase()} DROP)
               </h3>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                  Product Title <span className="text-red-400">*</span>
+                  Print / Product Title <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. INK ACID OVERSIZED TEE"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. GEOMETRY GRAPHIC TEE"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400"
                 />
               </div>
 
-              {/* Section / Department Selector */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-zinc-300">
-                    Section / Department <span className="text-red-400">*</span>
-                  </label>
-                  {!product && (
-                    <span className="text-[11px] text-zinc-400">
-                      Single, unisex, or dual-split drops
-                    </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-zinc-300">
+                      URL Slug
+                    </label>
+                    <button
+                      type="button"
+                      onClick={autoSlug}
+                      className="text-[11px] text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Generate from title
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. geometry"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
+                  />
+                  {isDualDrop && (
+                    <p className="text-[11px] text-zinc-500 mt-1">
+                      Will create <span className="text-zinc-300 font-mono">/{slug || "slug"}-men</span> & <span className="text-zinc-300 font-mono">/{slug || "slug"}-women</span>
+                    </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {[
-                    { id: "men", label: "Men", subtitle: "Men's Drops" },
-                    { id: "women", label: "Women", subtitle: "Women's Drops" },
-                    { id: "unisex", label: "Unisex", subtitle: "Shared Men & Women" },
-                    ...(!product
-                      ? [{ id: "split_both", label: "⚡ Auto-Split", subtitle: "Men + Women" }]
-                      : []),
-                    { id: "kids", label: "Kids", subtitle: "Kids' Drops" },
-                  ].map((sec) => {
-                    const isSelected =
-                      sec.id === "split_both"
-                        ? creationMode === "split_both"
-                        : creationMode === "standard" &&
-                          (form.section ?? "men").toLowerCase() === sec.id;
-
-                    return (
-                      <button
-                        key={sec.id}
-                        type="button"
-                        onClick={() => {
-                          if (sec.id === "split_both") {
-                            setCreationMode("split_both");
-                          } else {
-                            setCreationMode("standard");
-                            setForm({ ...form, section: sec.id });
-                          }
-                        }}
-                        className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border text-center transition-all cursor-pointer ${
-                          isSelected
-                            ? sec.id === "split_both"
-                              ? "bg-amber-400 text-zinc-950 border-amber-300 shadow-md font-bold ring-2 ring-amber-400/40"
-                              : sec.id === "unisex"
-                              ? "bg-purple-600 text-white border-purple-500 shadow-md font-bold ring-2 ring-purple-400"
-                              : "bg-white text-zinc-950 border-white shadow-md font-bold ring-2 ring-zinc-400"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-                        }`}
-                      >
-                        <span className="text-xs font-black uppercase tracking-wider">{sec.label}</span>
-                        <span
-                          className={`text-[10px] mt-0.5 line-clamp-1 ${
-                            isSelected
-                              ? sec.id === "split_both"
-                                ? "text-zinc-950 font-semibold"
-                                : "text-zinc-200 font-semibold"
-                              : "text-zinc-500"
-                          }`}
-                        >
-                          {sec.subtitle}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                    {activeDept === "women" ? "Women's" : activeDept === "men" ? "Men's" : activeDept.toUpperCase()} Fit / Category <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={currentConfig.category}
+                      onChange={(e) => updateActiveDeptConfig({ category: e.target.value })}
+                      className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer"
+                    >
+                      {currentConfig.category &&
+                        !PRODUCT_CATEGORIES.includes(
+                          currentConfig.category as (typeof PRODUCT_CATEGORIES)[number]
+                        ) && (
+                          <option value={currentConfig.category}>{currentConfig.category}</option>
+                        )}
+                      {PRODUCT_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
-
-                {/* Mode Explanation Banners */}
-                {creationMode === "split_both" ? (
-                  <div className="mt-2.5 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-amber-300">Dual-Drop Mode (Men + Women)</p>
-                      <p className="text-[11px] text-amber-200/90 mt-0.5">
-                        This print will be published as two coordinated products simultaneously (one for Men and one for Women). You configure images and pricing once, and customize the fits below!
-                      </p>
-                    </div>
-                  </div>
-                ) : (form.section ?? "").toLowerCase() === "unisex" ? (
-                  <div className="mt-2.5 p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 text-purple-200 text-xs flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-purple-300">Unisex Mode (Shared Item)</p>
-                      <p className="text-[11px] text-purple-200/90 mt-0.5">
-                        Saves a single product with shared inventory that appears in both Men's and Women's storefront collections automatically.
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-
-              {/* Slug and Category Configuration */}
-              {creationMode === "split_both" ? (
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">
-                        Base URL Slug
-                      </label>
-                      <button
-                        type="button"
-                        onClick={autoSlug}
-                        className="text-[11px] text-amber-400 hover:underline cursor-pointer"
-                      >
-                        Generate from title
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. cute-jerry"
-                      value={form.slug}
-                      onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
-                    />
-                    <p className="text-[11px] text-zinc-500 mt-1">
-                      Will automatically create: <span className="text-zinc-300 font-mono">/product/{form.slug || "slug"}-men</span> and <span className="text-zinc-300 font-mono">/product/{form.slug || "slug"}-women</span>
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                        Men's Fit / Cut <span className="text-red-400">*</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={menFit}
-                          onChange={(e) => setMenFit(e.target.value)}
-                          className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none cursor-pointer"
-                        >
-                          {PRODUCT_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                        Women's Fit / Cut <span className="text-red-400">*</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={womenFit}
-                          onChange={(e) => setWomenFit(e.target.value)}
-                          className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none cursor-pointer"
-                        >
-                          {PRODUCT_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">
-                        URL Slug
-                      </label>
-                      <button
-                        type="button"
-                        onClick={autoSlug}
-                        className="text-[11px] text-amber-400 hover:underline cursor-pointer"
-                      >
-                        Generate from title
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. ink-acid-oversized-tee"
-                      value={form.slug}
-                      onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                      Category <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={form.category}
-                        onChange={(e) => setForm({ ...form, category: e.target.value })}
-                        className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer"
-                      >
-                        {form.category &&
-                          !PRODUCT_CATEGORIES.includes(
-                            form.category as (typeof PRODUCT_CATEGORIES)[number]
-                          ) && (
-                            <option value={form.category}>{form.category}</option>
-                          )}
-                        {PRODUCT_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                  Colorway / Shade
+                  {activeDept === "women" ? "Women's" : activeDept === "men" ? "Men's" : activeDept.toUpperCase()} Colorway / Shade
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Acid Charcoal, Jet Black, Bone White"
-                  value={form.color}
-                  onChange={(e) => setForm({ ...form, color: e.target.value })}
+                  placeholder="e.g. Beige, Black, Acid Wash"
+                  value={currentConfig.color}
+                  onChange={(e) => updateActiveDeptConfig({ color: e.target.value })}
                   className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none"
                 />
               </div>
@@ -1368,9 +1506,21 @@ function ProductModal({
 
             {/* Pricing & Rating */}
             <div className="space-y-4 pt-4 border-t border-zinc-800/80">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                2. Pricing & Ratings
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                  2. Pricing & Ratings ({activeDept.toUpperCase()})
+                </h3>
+                {(activeDept === "men" || activeDept === "women") && (
+                  <button
+                    type="button"
+                    onClick={() => copyConfigFrom(activeDept === "men" ? "women" : "men")}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy pricing from {activeDept === "men" ? "Women" : "Men"}</span>
+                  </button>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -1381,8 +1531,8 @@ function ProductModal({
                     type="number"
                     min="1"
                     required
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    value={currentConfig.price}
+                    onChange={(e) => updateActiveDeptConfig({ price: Number(e.target.value) })}
                     className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 focus:outline-none"
                   />
                 </div>
@@ -1395,10 +1545,9 @@ function ProductModal({
                     type="number"
                     min="0"
                     placeholder="Leave empty if no discount"
-                    value={form.discountPrice == null ? "" : form.discountPrice}
+                    value={currentConfig.discountPrice == null ? "" : currentConfig.discountPrice}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
+                      updateActiveDeptConfig({
                         discountPrice: e.target.value === "" ? null : Number(e.target.value),
                       })
                     }
@@ -1422,8 +1571,8 @@ function ProductModal({
                     step="0.1"
                     min="1"
                     max="5"
-                    value={form.rating}
-                    onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
+                    value={currentConfig.rating}
+                    onChange={(e) => updateActiveDeptConfig({ rating: Number(e.target.value) })}
                     className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2 text-sm text-zinc-100 focus:outline-none"
                   />
                 </div>
@@ -1435,9 +1584,9 @@ function ProductModal({
                   <input
                     type="number"
                     min="0"
-                    value={form.reviewCount}
+                    value={currentConfig.reviewCount}
                     onChange={(e) =>
-                      setForm({ ...form, reviewCount: Number(e.target.value) })
+                      updateActiveDeptConfig({ reviewCount: Number(e.target.value) })
                     }
                     className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2 text-sm text-zinc-100 focus:outline-none"
                   />
@@ -1449,7 +1598,7 @@ function ProductModal({
             <div className="space-y-4 pt-4 border-t border-zinc-800/80">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                  3. Size Inventory Breakdown
+                  3. Size Inventory Breakdown ({activeDept.toUpperCase()})
                 </h3>
                 <span className="text-xs font-bold bg-zinc-800 px-2.5 py-0.5 rounded-full text-zinc-300">
                   Total: {currentTotalStock} units
@@ -1459,7 +1608,7 @@ function ProductModal({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {(["stockS", "stockM", "stockL", "stockXL"] as const).map((key) => {
                   const sizeLabel = key.replace("stock", "");
-                  const count = form[key];
+                  const count = currentConfig[key];
                   return (
                     <div key={key} className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
                       <div className="flex items-center justify-between text-xs font-bold text-zinc-300 mb-2">
@@ -1472,7 +1621,9 @@ function ProductModal({
                         <button
                           type="button"
                           onClick={() =>
-                            setForm((f) => ({ ...f, [key]: Math.max(0, f[key] - 1) }))
+                            updateActiveDeptConfig({
+                              [key]: Math.max(0, count - 1),
+                            } as Partial<DeptConfig>)
                           }
                           className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer"
                         >
@@ -1481,19 +1632,20 @@ function ProductModal({
                         <input
                           type="number"
                           min="0"
-                          value={form[key]}
+                          value={count}
                           onChange={(e) =>
-                            setForm({
-                              ...form,
-                              [key]: Math.max(0, Number(e.target.value)),
-                            })
+                            updateActiveDeptConfig({
+                              [key]: Math.max(0, parseInt(e.target.value) || 0),
+                            } as Partial<DeptConfig>)
                           }
-                          className="w-full text-center bg-zinc-900 border border-zinc-700/80 rounded-lg py-1 text-xs text-zinc-100 font-semibold focus:outline-none"
+                          className="flex-1 bg-zinc-900 border border-zinc-800 text-center text-xs py-1 rounded-lg text-white font-mono"
                         />
                         <button
                           type="button"
                           onClick={() =>
-                            setForm((f) => ({ ...f, [key]: f[key] + 1 }))
+                            updateActiveDeptConfig({
+                              [key]: count + 1,
+                            } as Partial<DeptConfig>)
                           }
                           className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer"
                         >
@@ -1507,14 +1659,14 @@ function ProductModal({
             </div>
 
             {/* Image Assets */}
-            <div className="space-y-3 pt-4 border-t border-zinc-800/80">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-4 pt-4 border-t border-zinc-800/80">
+              <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    4. Image Assets
+                    4. Image Assets ({images.length} photos)
                   </h3>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Upload images from your computer or paste image URLs.
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Click any picture to preview and edit its details. Use the department tags to assign to Men or Women.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1525,7 +1677,7 @@ function ProductModal({
                     className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
-                    <span>{uploadingImage ? "Uploading..." : "Upload from Computer"}</span>
+                    <span>{uploadingImage ? "Uploading..." : `Upload to ${activeDept.toUpperCase()}`}</span>
                   </button>
                   <button
                     type="button"
@@ -1533,7 +1685,7 @@ function ProductModal({
                     className="text-xs text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add URL</span>
+                    <span>Add Slot</span>
                   </button>
                 </div>
               </div>
@@ -1585,62 +1737,125 @@ function ProductModal({
                   <span>
                     {uploadingImage
                       ? "Uploading image files to server..."
-                      : "Drag & drop images here, or click to browse computer files"}
+                      : `Drag & drop photos here to add to ${activeDept.toUpperCase()} drop, or click to browse computer`}
                   </span>
                 </div>
               </div>
 
               {/* Image Slots List */}
               <div className="space-y-2">
-                {form.imageUrls.map((url, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-1.5 pr-2">
-                    <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative">
-                      {url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={url}
-                          alt={`Slot ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
+                {images.map((slot, idx) => {
+                  const isSelected = activeImageIndex === idx;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => selectImageSlot(idx)}
+                      className={`flex flex-col sm:flex-row sm:items-center gap-2.5 p-2 rounded-2xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-zinc-900 border-amber-400 shadow-lg ring-1 ring-amber-400/40"
+                          : "bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-950"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        {/* Thumbnail */}
+                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm">
+                          {slot.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={slot.url}
+                              alt={`Slot ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-zinc-600" />
+                          )}
+                          {isSelected && (
+                            <span className="absolute bottom-0 inset-x-0 bg-amber-400 text-zinc-950 text-[9px] font-black text-center py-0.5 leading-none">
+                              PREVIEW
+                            </span>
+                          )}
+                        </div>
+
+                        {/* URL input */}
+                        <input
+                          type="text"
+                          placeholder="Image URL (/uploads/... or https://...)"
+                          value={slot.url}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleImageUrlChange(idx, e.target.value)}
+                          className="flex-1 bg-transparent border-0 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none px-2 min-w-0"
                         />
-                      ) : (
-                        <ImageIcon className="w-4 h-4 text-zinc-600" />
-                      )}
+                      </div>
+
+                      {/* Department switcher pill for this picture */}
+                      <div
+                        className="flex items-center gap-1.5 shrink-0 self-end sm:self-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => changeSlotDepartment(idx, "women")}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                              slot.department === "women"
+                                ? "bg-rose-600 text-white shadow-xs"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            👩 Women
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => changeSlotDepartment(idx, "men")}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                              slot.department === "men"
+                                ? "bg-sky-600 text-white shadow-xs"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            👨 Men
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => changeSlotDepartment(idx, "unisex")}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                              slot.department === "unisex"
+                                ? "bg-purple-600 text-white shadow-xs"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            Unisex
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSlotTarget(idx);
+                            singleSlotFileInputRef.current?.click();
+                          }}
+                          className="p-1.5 text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+                          title="Upload local file to this slot"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span className="hidden md:inline">Browse</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeImageSlot(idx)}
+                          className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                          title="Remove image"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-
-                    <input
-                      type="text"
-                      placeholder="Image URL (/uploads/... or https://...)"
-                      value={url}
-                      onChange={(e) => handleImageChange(idx, e.target.value)}
-                      className="flex-1 bg-transparent border-0 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none px-2"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSlotTarget(idx);
-                        singleSlotFileInputRef.current?.click();
-                      }}
-                      className="p-1.5 text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
-                      title="Upload local file to this slot"
-                    >
-                      <FolderOpen className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Browse</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => removeImageSlot(idx)}
-                      className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
-                      title="Remove image"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -1656,7 +1871,7 @@ function ProductModal({
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {AVAILABLE_BADGES.map((b) => {
-                    const active = form.badges.includes(b);
+                    const active = badges.includes(b);
                     return (
                       <button
                         key={b}
@@ -1687,15 +1902,15 @@ function ProductModal({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, isVisible: !form.isVisible })}
+                  onClick={() => setIsVisible(!isVisible)}
                   className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
-                    form.isVisible ? "bg-emerald-500" : "bg-zinc-700"
+                    isVisible ? "bg-emerald-500" : "bg-zinc-700"
                   }`}
                   aria-label="Toggle visible on storefront"
                 >
                   <div
                     className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      form.isVisible ? "translate-x-6" : "translate-x-0"
+                      isVisible ? "translate-x-6" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -1708,32 +1923,53 @@ function ProductModal({
             <div className="sticky top-0 w-full max-w-sm space-y-3">
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-zinc-400">
                 <span>Live Card Preview</span>
-                <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
-                  Storefront Match
-                </span>
+                <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 p-0.5 rounded-lg text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => switchActiveDept("women")}
+                    className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                      activeDept === "women"
+                        ? "bg-rose-500 text-white shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Women ({womenImagesCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchActiveDept("men")}
+                    className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                      activeDept === "men"
+                        ? "bg-sky-500 text-white shadow-xs"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Men ({menImagesCount})
+                  </button>
+                </div>
               </div>
 
               {/* Mockup Card */}
               <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl text-left">
                 {/* Image */}
                 <div className="h-64 bg-zinc-900 relative overflow-hidden flex items-center justify-center">
-                  {form.imageUrls[0] ? (
+                  {previewImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={form.imageUrls[0]}
+                      src={previewImageUrl}
                       alt="preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-all duration-300"
                     />
                   ) : (
                     <div className="text-center text-zinc-600 p-4">
                       <ImageIcon className="w-10 h-10 mx-auto mb-2" />
-                      <p className="text-xs">No image URL provided</p>
+                      <p className="text-xs">No image uploaded for this slot</p>
                     </div>
                   )}
 
                   {/* Badges in Preview */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                    {form.badges.map((b) => (
+                    {badges.map((b) => (
                       <span
                         key={b}
                         className="text-[10px] font-black uppercase tracking-wider bg-black/90 text-amber-400 border border-amber-400/40 px-2.5 py-0.5 rounded shadow-lg backdrop-blur-sm"
@@ -1757,38 +1993,38 @@ function ProductModal({
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-zinc-400">
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                        creationMode === "split_both"
-                          ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
-                          : form.section === "unisex"
-                          ? "bg-purple-950/80 text-purple-300 border-purple-800/40"
-                          : "bg-zinc-800 text-zinc-200 border-zinc-700"
-                      }`}>
-                        {creationMode === "split_both"
-                          ? "⚡ Dual Drops (Men & Women)"
-                          : form.section === "unisex"
-                          ? "Unisex (Men & Women)"
-                          : form.section || "men"}
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                          activeDept === "women"
+                            ? "bg-rose-950/80 text-rose-300 border-rose-800/40"
+                            : activeDept === "men"
+                            ? "bg-sky-950/80 text-sky-300 border-sky-800/40"
+                            : activeDept === "unisex"
+                            ? "bg-purple-950/80 text-purple-300 border-purple-800/40"
+                            : "bg-zinc-800 text-zinc-200 border-zinc-700"
+                        }`}
+                      >
+                        {activeDept === "women" ? "WOMEN" : activeDept === "men" ? "MEN" : activeDept.toUpperCase()}
                       </span>
-                      <span>
-                        {creationMode === "split_both"
-                          ? `${menFit} / ${womenFit}`
-                          : form.category || "Category"}
+                      <span className="font-semibold text-zinc-200">
+                        {currentConfig.category || "Category"}
                       </span>
                     </div>
-                    <span>{form.color || "Color"}</span>
+                    <span className="font-medium text-zinc-400">
+                      {currentConfig.color || "Color"}
+                    </span>
                   </div>
                   <h4 className="font-bold text-zinc-100 text-sm line-clamp-1">
-                    {form.title || "Product Title Preview"}
+                    {title || "Product Title Preview"}
                   </h4>
                   <div className="flex items-baseline gap-2 pt-1">
                     <span className="text-lg font-bold text-white">
-                      {formatInr(form.discountPrice ?? form.price)}
+                      {formatInr(currentConfig.discountPrice ?? currentConfig.price)}
                     </span>
-                    {form.discountPrice && (
+                    {currentConfig.discountPrice && (
                       <>
                         <span className="text-xs line-through text-zinc-500">
-                          {formatInr(form.price)}
+                          {formatInr(currentConfig.price)}
                         </span>
                         <span className="text-xs font-bold text-emerald-400">
                           {currentDiscountPct}% OFF
@@ -1799,9 +2035,8 @@ function ProductModal({
 
                   {/* Sizing badges in preview */}
                   <div className="pt-2 flex items-center gap-1">
-                    {(["S", "M", "L", "XL"] as const).map((s) => {
-                      const countKey = `stock${s}` as keyof typeof form;
-                      const count = Number(form[countKey]) || 0;
+                    {(["stockS", "stockM", "stockL", "stockXL"] as const).map((s) => {
+                      const count = currentConfig[s];
                       return (
                         <span
                           key={s}
@@ -1811,7 +2046,7 @@ function ProductModal({
                               : "bg-zinc-900 text-zinc-600 border-zinc-800 line-through"
                           }`}
                         >
-                          {s}
+                          {s.replace("stock", "")}
                         </span>
                       );
                     })}
@@ -1837,8 +2072,8 @@ function ProductModal({
             form="product-edit-form"
             disabled={busy}
             className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2 ${
-              creationMode === "split_both" && !isEditing
-                ? "bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-amber-400/20"
+              isDualDrop
+                ? "bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-amber-400/20 font-bold"
                 : "bg-white hover:bg-zinc-100 text-zinc-950"
             }`}
           >
@@ -1846,9 +2081,9 @@ function ProductModal({
               ? "Saving Product..."
               : isEditing
               ? "Save Changes"
-              : creationMode === "split_both"
-              ? "⚡ Publish Dual Drops (Men & Women)"
-              : "Create Product"}
+              : isDualDrop
+              ? `⚡ Publish Dual Drops (${menImagesCount} Men & ${womenImagesCount} Women)`
+              : `Create ${activeDept === "women" ? "Women's" : activeDept === "men" ? "Men's" : activeDept === "unisex" ? "Unisex" : "Kids"} Product`}
           </button>
         </div>
       </div>
