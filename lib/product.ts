@@ -3,7 +3,7 @@ import type { Product } from "@prisma/client";
 export const SIZES = ["S", "M", "L", "XL"] as const;
 export type Size = (typeof SIZES)[number];
 
-export const PRODUCT_SECTIONS = ["men", "women", "kids"] as const;
+export const PRODUCT_SECTIONS = ["men", "women", "kids", "unisex"] as const;
 export type ProductSection = (typeof PRODUCT_SECTIONS)[number];
 
 export const PRODUCT_CATEGORIES = [

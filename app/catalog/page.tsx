@@ -107,7 +107,7 @@ export default async function CatalogPage() {
   const rows = await prisma.product.findMany({
     where: {
       isVisible: true,
-      section: { in: ["men", "women"] },
+      section: { in: ["men", "women", "unisex", "both"] },
     },
     select: STOREFRONT_PRODUCT_SELECT,
     orderBy: { createdAt: "desc" },

@@ -16,7 +16,8 @@ import {
   Image as ImageIcon,
   ChevronDown,
   Upload,
-  FolderOpen
+  FolderOpen,
+  Sparkles
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
@@ -272,6 +273,7 @@ export function ProductManager({
                 <option value="ALL">All Sections</option>
                 <option value="men">Men</option>
                 <option value="women">Women</option>
+                <option value="unisex">Unisex (Both)</option>
                 <option value="kids">Kids</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -455,8 +457,16 @@ export function ProductManager({
                               {p.title}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-400 flex-wrap">
-                              <span className="font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 text-[10px] uppercase tracking-wider">
-                                {p.section || "men"}
+                              <span className={`font-extrabold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${
+                                (p.section ?? "").toLowerCase() === "unisex" || (p.section ?? "").toLowerCase() === "both"
+                                  ? "bg-purple-950/80 text-purple-300 border-purple-700/60"
+                                  : (p.section ?? "").toLowerCase() === "women"
+                                  ? "bg-pink-950/80 text-pink-300 border-pink-700/60"
+                                  : (p.section ?? "").toLowerCase() === "kids"
+                                  ? "bg-amber-950/80 text-amber-300 border-amber-700/60"
+                                  : "bg-blue-950/80 text-blue-300 border-blue-700/60"
+                              }`}>
+                                {(p.section ?? "").toLowerCase() === "unisex" || (p.section ?? "").toLowerCase() === "both" ? "Unisex" : p.section || "men"}
                               </span>
                               <span className="font-medium text-zinc-300">{p.category}</span>
                               <span>•</span>
@@ -660,8 +670,16 @@ export function ProductManager({
                   <div>
                     <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 text-[10px] uppercase tracking-wider">
-                          {p.section || "men"}
+                        <span className={`font-extrabold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${
+                          (p.section ?? "").toLowerCase() === "unisex" || (p.section ?? "").toLowerCase() === "both"
+                            ? "bg-purple-950/80 text-purple-300 border-purple-700/60"
+                            : (p.section ?? "").toLowerCase() === "women"
+                            ? "bg-pink-950/80 text-pink-300 border-pink-700/60"
+                            : (p.section ?? "").toLowerCase() === "kids"
+                            ? "bg-amber-950/80 text-amber-300 border-amber-700/60"
+                            : "bg-blue-950/80 text-blue-300 border-blue-700/60"
+                        }`}>
+                          {(p.section ?? "").toLowerCase() === "unisex" || (p.section ?? "").toLowerCase() === "both" ? "Unisex" : p.section || "men"}
                         </span>
                         <span className="font-medium text-zinc-300">{p.category}</span>
                       </div>
@@ -837,6 +855,9 @@ function ProductModal({
   });
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [creationMode, setCreationMode] = useState<"standard" | "split_both">("standard");
+  const [menFit, setMenFit] = useState("Oversized Fit");
+  const [womenFit, setWomenFit] = useState("Boyfriend Fit");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isDragOverImages, setIsDragOverImages] = useState(false);
   const [activeSlotTarget, setActiveSlotTarget] = useState<number | null>(null);
@@ -971,6 +992,60 @@ function ProductModal({
       slug: form.slug.trim() || undefined,
     };
 
+    if (creationMode === "split_both" && !product) {
+      try {
+        const baseSlug =
+          form.slug.trim() ||
+          form.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "")
+            .slice(0, 50);
+
+        const menPayload = {
+          ...payload,
+          section: "men",
+          category: menFit,
+          slug: `${baseSlug}-men`,
+        };
+        const womenPayload = {
+          ...payload,
+          section: "women",
+          category: womenFit,
+          slug: `${baseSlug}-women`,
+        };
+
+        const [resMen, resWomen] = await Promise.all([
+          fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(menPayload),
+          }),
+          fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(womenPayload),
+          }),
+        ]);
+
+        if (!resMen.ok || !resWomen.ok) {
+          throw new Error("Failed to create both drops. Please check title and fields.");
+        }
+
+        onShowToast?.(
+          `Created both Men's (${menFit}) & Women's (${womenFit}) drops for "${form.title}"!`,
+          "success"
+        );
+        onSaved();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Something went wrong";
+        setErrorMsg(message);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     try {
       const url = product ? `/api/products/${product.id}` : "/api/products";
       const res = await fetch(url, {
@@ -1063,88 +1138,219 @@ function ProductModal({
                 />
               </div>
 
-              {/* Section Selector: Men, Women, Kids */}
+              {/* Section / Department Selector */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                  Section / Department <span className="text-red-400">*</span>
-                </label>
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Section / Department <span className="text-red-400">*</span>
+                  </label>
+                  {!product && (
+                    <span className="text-[11px] text-zinc-400">
+                      Single, unisex, or dual-split drops
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {[
                     { id: "men", label: "Men", subtitle: "Men's Drops" },
                     { id: "women", label: "Women", subtitle: "Women's Drops" },
+                    { id: "unisex", label: "Unisex", subtitle: "Shared Men & Women" },
+                    ...(!product
+                      ? [{ id: "split_both", label: "⚡ Auto-Split", subtitle: "Men + Women" }]
+                      : []),
                     { id: "kids", label: "Kids", subtitle: "Kids' Drops" },
                   ].map((sec) => {
-                    const active = (form.section ?? "men").toLowerCase() === sec.id;
+                    const isSelected =
+                      sec.id === "split_both"
+                        ? creationMode === "split_both"
+                        : creationMode === "standard" &&
+                          (form.section ?? "men").toLowerCase() === sec.id;
+
                     return (
                       <button
                         key={sec.id}
                         type="button"
-                        onClick={() => setForm({ ...form, section: sec.id })}
-                        className={`flex flex-col items-center justify-center py-2.5 px-3 rounded-xl border text-center transition-all cursor-pointer ${
-                          active
-                            ? "bg-white text-zinc-950 border-white shadow-md font-bold ring-2 ring-zinc-400"
+                        onClick={() => {
+                          if (sec.id === "split_both") {
+                            setCreationMode("split_both");
+                          } else {
+                            setCreationMode("standard");
+                            setForm({ ...form, section: sec.id });
+                          }
+                        }}
+                        className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? sec.id === "split_both"
+                              ? "bg-amber-400 text-zinc-950 border-amber-300 shadow-md font-bold ring-2 ring-amber-400/40"
+                              : sec.id === "unisex"
+                              ? "bg-purple-600 text-white border-purple-500 shadow-md font-bold ring-2 ring-purple-400"
+                              : "bg-white text-zinc-950 border-white shadow-md font-bold ring-2 ring-zinc-400"
                             : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
                         }`}
                       >
                         <span className="text-xs font-black uppercase tracking-wider">{sec.label}</span>
-                        <span className={`text-[10px] mt-0.5 ${active ? "text-zinc-700 font-semibold" : "text-zinc-500"}`}>
+                        <span
+                          className={`text-[10px] mt-0.5 line-clamp-1 ${
+                            isSelected
+                              ? sec.id === "split_both"
+                                ? "text-zinc-950 font-semibold"
+                                : "text-zinc-200 font-semibold"
+                              : "text-zinc-500"
+                          }`}
+                        >
                           {sec.subtitle}
                         </span>
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Mode Explanation Banners */}
+                {creationMode === "split_both" ? (
+                  <div className="mt-2.5 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-amber-300">Dual-Drop Mode (Men + Women)</p>
+                      <p className="text-[11px] text-amber-200/90 mt-0.5">
+                        This print will be published as two coordinated products simultaneously (one for Men and one for Women). You configure images and pricing once, and customize the fits below!
+                      </p>
+                    </div>
+                  </div>
+                ) : (form.section ?? "").toLowerCase() === "unisex" ? (
+                  <div className="mt-2.5 p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 text-purple-200 text-xs flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-purple-300">Unisex Mode (Shared Item)</p>
+                      <p className="text-[11px] text-purple-200/90 mt-0.5">
+                        Saves a single product with shared inventory that appears in both Men's and Women's storefront collections automatically.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      URL Slug
+              {/* Slug and Category Configuration */}
+              {creationMode === "split_both" ? (
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Base URL Slug
+                      </label>
+                      <button
+                        type="button"
+                        onClick={autoSlug}
+                        className="text-[11px] text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Generate from title
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. cute-jerry"
+                      value={form.slug}
+                      onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
+                    />
+                    <p className="text-[11px] text-zinc-500 mt-1">
+                      Will automatically create: <span className="text-zinc-300 font-mono">/product/{form.slug || "slug"}-men</span> and <span className="text-zinc-300 font-mono">/product/{form.slug || "slug"}-women</span>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                        Men's Fit / Cut <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={menFit}
+                          onChange={(e) => setMenFit(e.target.value)}
+                          className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none cursor-pointer"
+                        >
+                          {PRODUCT_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                        Women's Fit / Cut <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={womenFit}
+                          onChange={(e) => setWomenFit(e.target.value)}
+                          className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none cursor-pointer"
+                        >
+                          {PRODUCT_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        URL Slug
+                      </label>
+                      <button
+                        type="button"
+                        onClick={autoSlug}
+                        className="text-[11px] text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Generate from title
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. ink-acid-oversized-tee"
+                      value={form.slug}
+                      onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+                      Category <span className="text-red-400">*</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={autoSlug}
-                      className="text-[11px] text-amber-400 hover:underline cursor-pointer"
-                    >
-                      Generate from title
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="e.g. ink-acid-oversized-tee"
-                    value={form.slug}
-                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none font-mono text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    Category <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer"
-                    >
-                      {form.category &&
-                        !PRODUCT_CATEGORIES.includes(
-                          form.category as (typeof PRODUCT_CATEGORIES)[number]
-                        ) && (
-                          <option value={form.category}>{form.category}</option>
-                        )}
-                      {PRODUCT_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <div className="relative">
+                      <select
+                        value={form.category}
+                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                        className="appearance-none w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-xl px-3.5 pr-10 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 cursor-pointer"
+                      >
+                        {form.category &&
+                          !PRODUCT_CATEGORIES.includes(
+                            form.category as (typeof PRODUCT_CATEGORIES)[number]
+                          ) && (
+                            <option value={form.category}>{form.category}</option>
+                          )}
+                        {PRODUCT_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
@@ -1551,10 +1757,24 @@ function ProductModal({
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-zinc-400">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-zinc-800 text-zinc-200 border border-zinc-700 px-1.5 py-0.5 rounded">
-                        {form.section || "men"}
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                        creationMode === "split_both"
+                          ? "bg-amber-400/20 text-amber-300 border-amber-400/40"
+                          : form.section === "unisex"
+                          ? "bg-purple-950/80 text-purple-300 border-purple-800/40"
+                          : "bg-zinc-800 text-zinc-200 border-zinc-700"
+                      }`}>
+                        {creationMode === "split_both"
+                          ? "⚡ Dual Drops (Men & Women)"
+                          : form.section === "unisex"
+                          ? "Unisex (Men & Women)"
+                          : form.section || "men"}
                       </span>
-                      <span>{form.category || "Category"}</span>
+                      <span>
+                        {creationMode === "split_both"
+                          ? `${menFit} / ${womenFit}`
+                          : form.category || "Category"}
+                      </span>
                     </div>
                     <span>{form.color || "Color"}</span>
                   </div>
@@ -1616,9 +1836,19 @@ function ProductModal({
             type="submit"
             form="product-edit-form"
             disabled={busy}
-            className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-white hover:bg-zinc-100 text-zinc-950 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+            className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2 ${
+              creationMode === "split_both" && !isEditing
+                ? "bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-amber-400/20"
+                : "bg-white hover:bg-zinc-100 text-zinc-950"
+            }`}
           >
-            {busy ? "Saving Product..." : isEditing ? "Save Changes" : "Create Product"}
+            {busy
+              ? "Saving Product..."
+              : isEditing
+              ? "Save Changes"
+              : creationMode === "split_both"
+              ? "⚡ Publish Dual Drops (Men & Women)"
+              : "Create Product"}
           </button>
         </div>
       </div>

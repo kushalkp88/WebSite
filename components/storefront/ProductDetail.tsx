@@ -231,9 +231,15 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           {/* Header Info */}
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
-              <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-black border border-emerald-200">
-                {product.section || "men"}
-              </span>
+              {product.section?.toLowerCase() === "unisex" || product.section?.toLowerCase() === "both" ? (
+                <span className="text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-black border border-purple-200">
+                  Unisex
+                </span>
+              ) : (
+                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-black border border-emerald-200">
+                  {product.section || "men"}
+                </span>
+              )}
               <span>•</span>
               <span>{product.category}</span>
             </div>

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Instrument_Serif, Geist } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +43,9 @@ async function loadTheme(): Promise<ThemePayload> {
 
 export default async function RootLayout({
   children,
-}: LayoutProps<"/">) {
+}: {
+  children: ReactNode;
+}) {
   const theme = await loadTheme();
   return (
     <html

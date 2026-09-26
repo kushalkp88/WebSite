@@ -116,7 +116,9 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       if (p.section?.toLowerCase() === "kids") return false;
 
       if (q && !p.title.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
-      if (filters.genders.length && !filters.genders.includes((p.section ?? "men").toLowerCase())) return false;
+      const sec = (p.section ?? "men").toLowerCase();
+      const isUnisex = sec === "unisex" || sec === "both";
+      if (filters.genders.length && !filters.genders.includes(sec) && !isUnisex) return false;
       if (badge && !p.badges.includes(badge)) return false;
       if (filters.colors.length && !filters.colors.includes(p.color)) return false;
       if (filters.fits.length) {
