@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { 
   Heart, 
   Star, 
   Truck, 
   Ruler, 
   ChevronDown, 
+  ChevronLeft,
+  ChevronRight,
   ShoppingBag, 
   Check 
 } from "lucide-react";
 import {
   formatInr,
+  getProductColorDots,
   isOutOfStock,
   percentOff,
   salePrice,
@@ -33,9 +36,31 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const [justAdded, setJustAdded] = useState(false);
   const [isReduced, setIsReduced] = useState(false);
 
+  const thumbContainerRef = useRef<HTMLDivElement>(null);
+
   const oos = isOutOfStock(product);
   const sale = salePrice(product);
   const off = percentOff(product);
+
+  const colorDots = useMemo(() => {
+    return getProductColorDots(product);
+  }, [product]);
+
+  const activeColorIndex = useMemo(() => {
+    if (colorDots.length === 0) return 0;
+    if (activeImg < colorDots.length) return activeImg;
+    return 0;
+  }, [colorDots, activeImg]);
+
+  // Auto-scroll the active thumbnail into view when activeImg changes
+  useEffect(() => {
+    if (thumbContainerRef.current) {
+      const activeEl = thumbContainerRef.current.children[activeImg] as HTMLElement | undefined;
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  }, [activeImg]);
 
   const addToCart = useShop((s) => s.addToCart);
   const openBag = useShop((s) => s.openBag);
@@ -53,7 +78,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
       productId: product.id,
       slug: product.slug,
       title: product.title,
-      image: product.imageUrls[0] ?? "",
+      image: product.imageUrls[activeImg] ?? product.imageUrls[0] ?? "",
       price: sale,
       size,
       qty: 1,
@@ -86,6 +111,59 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               }`}
             />
 
+            {/* Prev / Next Image Navigation Arrows */}
+            {product.imageUrls.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous image"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImg((prev) => (prev === 0 ? product.imageUrls.length - 1 : prev - 1));
+                  }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/90 text-zinc-900 shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:bg-white hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next image"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImg((prev) => (prev === product.imageUrls.length - 1 ? 0 : prev + 1));
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/90 text-zinc-900 shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:bg-white hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
+
+            {/* Compact Navigation Dots in Pill (Constant Sleek White) */}
+            {product.imageUrls.length > 1 && (
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 bg-black/60 hover:bg-black/75 backdrop-blur-md rounded-full shadow-lg border border-white/20 select-none pointer-events-auto transition-all"
+              >
+                {product.imageUrls.map((_, i) => {
+                  const isActive = i === activeImg;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`View image ${i + 1}`}
+                      onClick={() => setActiveImg(i)}
+                      className={`rounded-full transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? "w-2.5 h-2.5 bg-white ring-2 ring-white/40 scale-125 shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                          : "w-2 h-2 bg-white/40 hover:bg-white/80 hover:scale-110"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
             {/* Floating Badges */}
             <div className="absolute top-3 sm:top-4 left-3 sm:left-4 flex flex-col gap-1 sm:gap-1.5 z-10">
               {product.badges.map((b) => (
@@ -112,7 +190,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   productId: product.id,
                   slug: product.slug,
                   title: product.title,
-                  image: product.imageUrls[0],
+                  image: product.imageUrls[activeImg] ?? product.imageUrls[0],
                   price: sale,
                 })
               }
@@ -124,21 +202,26 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
 
           {/* Thumbnail row (Portrait 3:4 Ratio) */}
           {product.imageUrls.length > 1 && (
-            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-none">
-              {product.imageUrls.map((src, i) => (
-                <button
-                  key={src}
-                  type="button"
-                  onClick={() => setActiveImg(i)}
-                  className={`aspect-[3/4] h-20 sm:h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
-                    i === activeImg
-                      ? "border-zinc-900 scale-105 shadow-md"
-                      : "border-zinc-200 opacity-60 hover:opacity-100"
-                  }`}
-                >
-                  <ProductImage src={src} alt="" className="h-full w-full object-cover object-top" />
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <div 
+                ref={thumbContainerRef}
+                className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 image-scrollbar pt-1 select-none"
+              >
+                {product.imageUrls.map((src, i) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => setActiveImg(i)}
+                    className={`group/thumb relative aspect-[3/4] h-20 sm:h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
+                      i === activeImg
+                        ? "border-zinc-950 scale-105 shadow-md ring-2 ring-zinc-950/20"
+                        : "border-zinc-200 opacity-60 hover:opacity-100 hover:border-zinc-400"
+                    }`}
+                  >
+                    <ProductImage src={src} alt="" className="h-full w-full object-cover object-top" />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -153,8 +236,6 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               </span>
               <span>•</span>
               <span>{product.category}</span>
-              <span>•</span>
-              <span className="text-zinc-700">{product.color}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 leading-tight">
@@ -190,6 +271,57 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               </>
             )}
           </div>
+
+          {/* Colour Swatches with Names */}
+          {colorDots.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-900">
+                  Colours
+                </span>
+                {colorDots[activeColorIndex] && (
+                  <span className="text-xs font-medium text-zinc-500">
+                    Selected:{" "}
+                    <strong className="text-zinc-900 font-bold capitalize">
+                      {colorDots[activeColorIndex].name}
+                    </strong>
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {colorDots.map((dot, i) => {
+                  const isActive = i === activeColorIndex;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`Select ${dot.name}`}
+                      onClick={() => {
+                        const targetImg = Math.min(i, product.imageUrls.length - 1);
+                        setActiveImg(targetImg);
+                      }}
+                      className={`group flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                        isActive
+                          ? "bg-zinc-900 text-white border-zinc-900 shadow-sm ring-2 ring-zinc-900/20 scale-[1.02]"
+                          : "bg-white text-zinc-800 border-zinc-300 hover:border-zinc-500 hover:text-black"
+                      }`}
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full shrink-0 shadow-sm transition-transform group-hover:scale-110"
+                        style={{
+                          backgroundColor: dot.bg,
+                          boxShadow: dot.isLight
+                            ? "inset 0 0 0 1px rgba(0,0,0,0.25)"
+                            : "inset 0 0 0 1px rgba(255,255,255,0.25)",
+                        }}
+                      />
+                      <span className="capitalize">{dot.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Size Selector */}
           <div className="space-y-3">

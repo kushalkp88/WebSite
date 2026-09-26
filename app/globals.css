@@ -48,3 +48,31 @@ body {
 .hero-copy {
   animation: fade-up 0.7s ease-out both;
 }
+
+/* Custom scrollbar for horizontal image galleries & multiple colour tees */
+.image-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #a1a1aa #f4f4f5;
+  -webkit-overflow-scrolling: touch;
+}
+
+.image-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  display: block;
+}
+
+.image-scrollbar::-webkit-scrollbar-track {
+  background: #f4f4f5;
+  border-radius: 9999px;
+}
+
+.image-scrollbar::-webkit-scrollbar-thumb {
+  background: #a1a1aa;
+  border-radius: 9999px;
+  border: 1px solid #f4f4f5;
+}
+
+.image-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
+

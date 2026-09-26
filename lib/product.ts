@@ -89,3 +89,105 @@ export function serializeProduct(p: Product): ProductDTO {
     reviewCount: p.reviewCount,
   };
 }
+
+export const COLOR_MAP: Record<string, { bg: string; border?: string }> = {
+  black: { bg: "#18181b", border: "#27272a" },
+  white: { bg: "#f8fafc", border: "#cbd5e1" },
+  grey: { bg: "#6b7280", border: "#9ca3af" },
+  gray: { bg: "#6b7280", border: "#9ca3af" },
+  navy: { bg: "#1e293b", border: "#334155" },
+  "royal blue": { bg: "#2563eb", border: "#3b82f6" },
+  blue: { bg: "#3b82f6", border: "#60a5fa" },
+  red: { bg: "#dc2626", border: "#ef4444" },
+  beige: { bg: "#d4b996", border: "#c2a37d" },
+  "olive green": { bg: "#556b2f", border: "#6b8e23" },
+  olive: { bg: "#556b2f", border: "#6b8e23" },
+  green: { bg: "#16a34a", border: "#22c55e" },
+  teal: { bg: "#0d9488", border: "#14b8a6" },
+  maroon: { bg: "#800020", border: "#991b1b" },
+  yellow: { bg: "#eab308", border: "#facc15" },
+  brown: { bg: "#78350f", border: "#92400e" },
+  purple: { bg: "#9333ea", border: "#a855f7" },
+  pink: { bg: "#ec4899", border: "#f472b6" },
+  orange: { bg: "#ea580c", border: "#f97316" },
+  "charcoal gray": { bg: "#374151", border: "#4b5563" },
+  "charcoal grey": { bg: "#374151", border: "#4b5563" },
+  charcoal: { bg: "#374151", border: "#4b5563" },
+  lavender: { bg: "#c4b5fd", border: "#a78bfa" },
+  cream: { bg: "#fef3c7", border: "#fde68a" },
+  mustard: { bg: "#d97706", border: "#f59e0b" },
+  coral: { bg: "#f43f5e", border: "#fb7185" },
+  cyan: { bg: "#06b6d4", border: "#22d3ee" },
+  magenta: { bg: "#d946ef", border: "#e879f9" },
+  rust: { bg: "#b45309", border: "#d97706" },
+  burgundy: { bg: "#701a75", border: "#86198f" },
+};
+
+export type ColorDot = {
+  name: string;
+  bg: string;
+  border: string;
+  isLight: boolean;
+};
+
+export function getTeeColor(colorName: string): Omit<ColorDot, "name"> {
+  const normalized = colorName.toLowerCase().trim();
+  const sortedKeys = Object.keys(COLOR_MAP).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (normalized.includes(key)) {
+      const val = COLOR_MAP[key];
+      const isLight =
+        key === "white" ||
+        key === "beige" ||
+        key === "yellow" ||
+        key === "cream" ||
+        normalized.includes("white") ||
+        normalized.includes("yellow") ||
+        normalized.includes("cream") ||
+        normalized.includes("beige");
+      return { bg: val.bg, border: val.border || val.bg, isLight };
+    }
+  }
+  return { bg: "#27272a", border: "#3f3f46", isLight: false };
+}
+
+export function getProductColorDots(product: {
+  color: string;
+  imageUrls: string[];
+}): ColorDot[] {
+  const parts = product.color
+    ? product.color
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+
+  if (parts.length > 0) {
+    return parts.map((name) => ({
+      name,
+      ...getTeeColor(name),
+    }));
+  }
+
+  const detected = product.imageUrls
+    .map((imgUrl) => {
+      const lowerImg = imgUrl.toLowerCase();
+      for (const key of Object.keys(COLOR_MAP)) {
+        if (lowerImg.includes(key)) {
+          return {
+            name: key,
+            ...getTeeColor(key),
+          };
+        }
+      }
+      return null;
+    })
+    .filter((d): d is ColorDot => d !== null);
+
+  if (detected.length > 0) {
+    return detected;
+  }
+
+  return [];
+}
+

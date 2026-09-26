@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { prisma } from "@/lib/prisma";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -107,6 +108,24 @@ export async function GET() {
     const uploadDir = getUploadDir();
     await fs.mkdir(uploadDir, { recursive: true });
 
+    // Fetch all products to track image usage
+    const products = await prisma.product.findMany({
+      select: { title: true, slug: true, imageUrls: true },
+    });
+
+    const usageMap = new Map<string, Array<{ title: string; slug: string }>>();
+    for (const p of products) {
+      try {
+        const urls = JSON.parse(p.imageUrls || "[]") as string[];
+        for (const u of urls) {
+          if (!usageMap.has(u)) usageMap.set(u, []);
+          usageMap.get(u)!.push({ title: p.title, slug: p.slug });
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+    }
+
     const entries = await fs.readdir(uploadDir, { withFileTypes: true });
     const imageFiles = [];
 
@@ -116,11 +135,14 @@ export async function GET() {
         if ([".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".avif"].includes(ext)) {
           const filePath = path.join(uploadDir, entry.name);
           const stat = await fs.stat(filePath);
+          const url = `/uploads/${entry.name}`;
+          const usedIn = usageMap.get(url) || [];
           imageFiles.push({
-            url: `/uploads/${entry.name}`,
+            url,
             filename: entry.name,
             size: stat.size,
             mtime: stat.mtime.toISOString(),
+            usedIn,
           });
         }
       }

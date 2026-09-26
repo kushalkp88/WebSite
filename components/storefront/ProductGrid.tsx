@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Heart, Sparkles, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import {
@@ -31,8 +31,17 @@ export function ProductCard({ product }: { product: ProductDTO }) {
     s.wishlist.some((w) => w.productId === product.id),
   );
 
-  const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [""];
+  const images = useMemo(() => {
+    return product.imageUrls && product.imageUrls.length > 0
+      ? product.imageUrls
+      : [""];
+  }, [product.imageUrls]);
+
   const currentImg = images[imgIdx] ?? images[0];
+
+  // Touch and drag tracking so scrubbing/swiping doesn't trigger Link navigation
+  const touchStartXRef = useRef<number | null>(null);
+  const hasSwipedRef = useRef(false);
 
   function handleAdd(size: Size, e: React.MouseEvent) {
     e.preventDefault();
@@ -71,14 +80,68 @@ export function ProductCard({ product }: { product: ProductDTO }) {
     setImgIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }
 
-  function handleImageClick() {
+  function handleImageClick(e: React.MouseEvent) {
+    if (hasSwipedRef.current) {
+      e.preventDefault();
+      hasSwipedRef.current = false;
+      return;
+    }
     setIsReduced((prev) => !prev);
   }
+
+  // Horizontal wheel scroll on image
+  const handleWheel = (e: React.WheelEvent) => {
+    if (images.length <= 1) return;
+    if (Math.abs(e.deltaX) > 18) {
+      if (e.deltaX > 0) {
+        setImgIdx((prev) => Math.min(images.length - 1, prev + 1));
+      } else {
+        setImgIdx((prev) => Math.max(0, prev - 1));
+      }
+    }
+  };
+
+  // Touch swipe handling
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    hasSwipedRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = e.touches[0].clientX - touchStartXRef.current;
+    if (Math.abs(diff) > 20) {
+      hasSwipedRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartXRef.current;
+    if (Math.abs(diff) > 35 && images.length > 1) {
+      hasSwipedRef.current = true;
+      if (diff < 0) {
+        setImgIdx((prev) => Math.min(images.length - 1, prev + 1));
+      } else {
+        setImgIdx((prev) => Math.max(0, prev - 1));
+      }
+      setTimeout(() => {
+        hasSwipedRef.current = false;
+      }, 150);
+    }
+    touchStartXRef.current = null;
+  };
 
   return (
     <article className="group flex flex-col justify-between transition-all">
       {/* Product Image Frame (Veirdo 3:4 Aspect Ratio - Full Width of Column) */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl sm:rounded-2xl bg-zinc-100 border border-zinc-200/80 shadow-2xs group/card select-none">
+      <div 
+        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="relative aspect-[3/4] w-full overflow-hidden rounded-xl sm:rounded-2xl bg-zinc-100 border border-zinc-200/80 shadow-2xs group/card select-none"
+      >
         <Link 
           href={`/product/${product.slug}`} 
           onClick={handleImageClick}
@@ -117,27 +180,36 @@ export function ProductCard({ product }: { product: ProductDTO }) {
           </>
         )}
 
-        {/* Scrolling Pagination Dots for multiple images */}
+        {/* Compact Navigation Dots in Pill (Constant Sleek White) */}
         {images.length > 1 && (
-          <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full shadow-xs">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Go to image ${i + 1}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setImgIdx(i);
-                }}
-                onMouseEnter={() => setImgIdx(i)}
-                className={`transition-all duration-300 cursor-pointer ${
-                  imgIdx === i
-                    ? "w-4 h-1.5 bg-white rounded-full shadow-xs"
-                    : "w-1.5 h-1.5 bg-white/50 hover:bg-white/90 rounded-full"
-                }`}
-              />
-            ))}
+          <div 
+            className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1.5 bg-black/60 hover:bg-black/75 backdrop-blur-md rounded-full shadow-lg border border-white/20 pointer-events-auto transition-all select-none"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            {images.map((_, i) => {
+              const isActive = i === imgIdx;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`View image ${i + 1}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setImgIdx(i);
+                  }}
+                  onMouseEnter={() => setImgIdx(i)}
+                  className={`rounded-full transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "w-2.5 h-2.5 bg-white ring-2 ring-white/40 scale-125 shadow-[0_0_6px_rgba(255,255,255,0.7)]"
+                      : "w-2 h-2 bg-white/40 hover:bg-white/80 hover:scale-110"
+                  }`}
+                />
+              );
+            })}
           </div>
         )}
 

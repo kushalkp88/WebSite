@@ -18,6 +18,7 @@ export interface UploadedImageItem {
   filename: string;
   size: number;
   mtime: string;
+  usedIn?: Array<{ title: string; slug: string }>;
 }
 
 interface MediaManagerProps {
@@ -30,6 +31,7 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "used" | "unused">("all");
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,8 +124,23 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
     }
   }
 
-  async function handleDeleteImage(url: string, filename: string) {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+  async function handleDeleteImage(
+    url: string,
+    filename: string,
+    usedIn?: Array<{ title: string; slug: string }>
+  ) {
+    if (usedIn && usedIn.length > 0) {
+      const names = usedIn.map((p) => p.title).join(", ");
+      if (
+        !confirm(
+          `WARNING: "${filename}" is currently in use by product(s): ${names}.\n\nDeleting this image will cause broken image displays on your store. Are you sure you want to delete it?`
+        )
+      ) {
+        return;
+      }
+    } else {
+      if (!confirm(`Are you sure you want to delete unused image "${filename}"?`)) return;
+    }
 
     try {
       const res = await fetch(`/api/upload?url=${encodeURIComponent(url)}`, {
@@ -144,6 +161,38 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
       const message = err instanceof Error ? err.message : "Failed to delete file";
       onShowToast(message, "error");
     }
+  }
+
+  async function handleDeleteAllUnused() {
+    const unusedImages = images.filter((img) => !img.usedIn || img.usedIn.length === 0);
+    if (unusedImages.length === 0) {
+      onShowToast("No unused images to clean up!", "error");
+      return;
+    }
+
+    const totalSize = formatBytes(unusedImages.reduce((acc, c) => acc + c.size, 0));
+    if (
+      !confirm(
+        `Are you sure you want to delete all ${unusedImages.length} unused images (${totalSize})?\n\nThis will safely keep all images currently linked to products.`
+      )
+    ) {
+      return;
+    }
+
+    let deletedCount = 0;
+    for (const img of unusedImages) {
+      try {
+        const res = await fetch(`/api/upload?url=${encodeURIComponent(img.url)}`, {
+          method: "DELETE",
+        });
+        if (res.ok) deletedCount++;
+      } catch {
+        // continue
+      }
+    }
+
+    onShowToast(`Cleaned up ${deletedCount} unused images!`, "success");
+    await fetchImages();
   }
 
   function handleCopy(url: string) {
@@ -176,9 +225,19 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
     }
   }
 
-  const filteredImages = images.filter((img) =>
-    img.filename.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const usedCount = images.filter((img) => img.usedIn && img.usedIn.length > 0).length;
+  const unusedCount = images.length - usedCount;
+
+  const filteredImages = images.filter((img) => {
+    const isUsed = img.usedIn && img.usedIn.length > 0;
+    if (filterStatus === "used" && !isUsed) return false;
+    if (filterStatus === "unused" && isUsed) return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const usedMatch = img.usedIn?.some((p) => p.title.toLowerCase().includes(q));
+    return img.filename.toLowerCase().includes(q) || Boolean(usedMatch);
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -269,25 +328,78 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
         </div>
       </div>
 
-      {/* Search & Stats Bar */}
-      <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search uploaded files..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-600 rounded-xl pl-10 pr-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-          />
+      {/* Search, Filter & Stats Bar */}
+      <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by file or product..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-600 rounded-xl pl-10 pr-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            />
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 p-1 rounded-xl w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setFilterStatus("all")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filterStatus === "all"
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              All ({images.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterStatus("used")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filterStatus === "used"
+                  ? "bg-emerald-950 text-emerald-300 border border-emerald-800/80 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              In Products ({usedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterStatus("unused")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                filterStatus === "unused"
+                  ? "bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Extra / Unused ({unusedCount})
+            </button>
+          </div>
         </div>
 
-        <div className="text-xs text-zinc-400 w-full sm:w-auto text-right">
-          Total: <strong className="text-zinc-200">{images.length}</strong> files (
-          <strong className="text-zinc-200">
-            {formatBytes(images.reduce((acc, curr) => acc + curr.size, 0))}
-          </strong>
-          )
+        <div className="flex items-center justify-between lg:justify-end gap-3 text-xs text-zinc-400">
+          {unusedCount > 0 && (
+            <button
+              type="button"
+              onClick={handleDeleteAllUnused}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-800/60 font-medium transition-colors cursor-pointer"
+              title="Delete all extra files not attached to any product"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clean Up Unused ({unusedCount})</span>
+            </button>
+          )}
+
+          <div>
+            Total: <strong className="text-zinc-200">{images.length}</strong> files (
+            <strong className="text-zinc-200">
+              {formatBytes(images.reduce((acc, curr) => acc + curr.size, 0))}
+            </strong>
+            )
+          </div>
         </div>
       </div>
 
@@ -327,12 +439,27 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
                   />
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+
+                  {/* Product Usage Badge (Top Left) */}
+                  <div className="absolute top-2 left-2 z-10 max-w-[70%]">
+                    {img.usedIn && img.usedIn.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-emerald-600/95 text-white shadow-md backdrop-blur-sm truncate">
+                        <Check className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{img.usedIn.map((p) => p.title).join(", ")}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-zinc-900/85 text-zinc-400 border border-zinc-700/80 backdrop-blur-sm">
+                        Extra / Unused
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity z-10">
                     <button
                       type="button"
-                      onClick={() => handleDeleteImage(img.url, img.filename)}
+                      onClick={() => handleDeleteImage(img.url, img.filename, img.usedIn)}
                       className="p-1.5 rounded-lg bg-black/70 hover:bg-red-600 text-zinc-300 hover:text-white backdrop-blur-sm transition-colors cursor-pointer"
-                      title="Delete file"
+                      title={img.usedIn && img.usedIn.length > 0 ? `Used in ${img.usedIn.map((p) => p.title).join(", ")}` : "Delete unused file"}
                       aria-label="Delete image"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
