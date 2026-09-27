@@ -27,7 +27,16 @@ import {
   Minus
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
-import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
+import { 
+  formatInr, 
+  isOutOfStock, 
+  totalStock, 
+  percentOff, 
+  PRODUCT_CATEGORIES,
+  getCleanImageUrl,
+  getImageColorTag,
+  getTeeColor
+} from "@/lib/product";
 
 const AVAILABLE_BADGES = [
   "BEST SELLER",
@@ -451,7 +460,7 @@ export function ProductManager({
                             {p.imageUrls[0] ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={p.imageUrls[0]}
+                                src={getCleanImageUrl(p.imageUrls[0])}
                                 alt={p.title}
                                 className="w-full h-full object-cover"
                               />
@@ -638,7 +647,7 @@ export function ProductManager({
                   {p.imageUrls[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={p.imageUrls[0]}
+                      src={getCleanImageUrl(p.imageUrls[0])}
                       alt={p.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -856,6 +865,7 @@ interface DeptConfig {
 interface ImageSlot {
   url: string;
   department: DeptType;
+  color?: string;
 }
 
 function ProductModal({
@@ -975,24 +985,36 @@ function ProductModal({
     };
   });
 
-  // Image slots with department assignment
+  // Image slots with department assignment and color tag
   const [images, setImages] = useState<ImageSlot[]>(() => {
     const slots: ImageSlot[] = [];
     if (product?.imageUrls?.length) {
       const pDept = (product.section?.toLowerCase() as DeptType) || initialDept;
-      product.imageUrls.forEach((url) => {
-        slots.push({ url, department: pDept });
+      product.imageUrls.forEach((rawUrl) => {
+        slots.push({
+          url: getCleanImageUrl(rawUrl),
+          department: pDept,
+          color: getImageColorTag(rawUrl) || undefined,
+        });
       });
     }
     if (counterpart?.imageUrls?.length) {
       const cDept = (counterpart.section?.toLowerCase() as DeptType) || "men";
-      counterpart.imageUrls.forEach((url) => {
-        slots.push({ url, department: cDept });
+      counterpart.imageUrls.forEach((rawUrl) => {
+        slots.push({
+          url: getCleanImageUrl(rawUrl),
+          department: cDept,
+          color: getImageColorTag(rawUrl) || undefined,
+        });
       });
     }
     if (slots.length > 0) return slots;
     if (initialImageUrl) {
-      return [{ url: initialImageUrl, department: initialDept }];
+      return [{
+        url: getCleanImageUrl(initialImageUrl),
+        department: initialDept,
+        color: getImageColorTag(initialImageUrl) || undefined,
+      }];
     }
     return [{ url: "", department: initialDept }];
   });
@@ -1050,6 +1072,41 @@ function ProductModal({
     }
   }
 
+  // Available unique colors gathered from all department configs
+  const availableColors = useMemo(() => {
+    const set = new Set<string>();
+    const gather = (val?: string) => {
+      if (!val) return;
+      val.split(",").forEach((c) => {
+        const trimmed = c.trim();
+        if (trimmed && trimmed.toLowerCase() !== "standard") set.add(trimmed);
+      });
+    };
+    gather(deptConfigs.women.color);
+    gather(deptConfigs.men.color);
+    gather(deptConfigs.unisex.color);
+    gather(deptConfigs.kids.color);
+    return Array.from(set);
+  }, [deptConfigs]);
+
+  function detectColorFromFilename(filename: string, candidateColors: string[]): string | undefined {
+    const lower = filename.toLowerCase();
+    for (const color of candidateColors) {
+      if (lower.includes(color.toLowerCase())) return color;
+      const words = color.toLowerCase().split(/\s+/);
+      for (const w of words) {
+        if (w.length >= 3 && lower.includes(w)) return color;
+      }
+    }
+    return undefined;
+  }
+
+  function changeSlotColor(idx: number, newColor: string) {
+    const next = [...images];
+    next[idx] = { ...next[idx], color: newColor.trim() || undefined };
+    setImages(next);
+  }
+
   function copyConfigFrom(sourceDept: DeptType) {
     const src = deptConfigs[sourceDept];
     setDeptConfigs((prev) => ({
@@ -1058,6 +1115,8 @@ function ProductModal({
         ...prev[activeDept],
         price: src.price,
         discountPrice: src.discountPrice,
+        color: src.color,
+        category: src.category,
         stockS: src.stockS,
         stockM: src.stockM,
         stockL: src.stockL,
@@ -1121,21 +1180,34 @@ function ProductModal({
       if (uploadedUrls.length === 0) return;
 
       if (targetSlot !== undefined && targetSlot !== null && targetSlot >= 0) {
+        const file0 = files[0];
+        const color0 = file0 ? detectColorFromFilename(file0.name, availableColors) : undefined;
         const next = [...images];
-        next[targetSlot] = { url: uploadedUrls[0], department: deptToAssign };
+        next[targetSlot] = {
+          url: uploadedUrls[0],
+          department: deptToAssign,
+          color: color0 || next[targetSlot]?.color,
+        };
         if (uploadedUrls.length > 1) {
-          uploadedUrls.slice(1).forEach((u) => {
-            next.push({ url: u, department: deptToAssign });
+          uploadedUrls.slice(1).forEach((u, i) => {
+            const f = files[i + 1];
+            const c = f ? detectColorFromFilename(f.name, availableColors) : undefined;
+            next.push({ url: u, department: deptToAssign, color: c });
           });
         }
         setImages(next);
         setActiveImageIndex(targetSlot);
       } else {
         const existingValid = images.filter((img) => img.url.trim() !== "");
-        const newSlots: ImageSlot[] = uploadedUrls.map((u) => ({
-          url: u,
-          department: deptToAssign,
-        }));
+        const newSlots: ImageSlot[] = uploadedUrls.map((u, i) => {
+          const f = files[i];
+          const c = f ? detectColorFromFilename(f.name, availableColors) : undefined;
+          return {
+            url: u,
+            department: deptToAssign,
+            color: c,
+          };
+        });
         const combined = [...existingValid, ...newSlots];
         setImages(combined.length ? combined : [{ url: "", department: deptToAssign }]);
         setActiveImageIndex(existingValid.length);
@@ -1167,7 +1239,7 @@ function ProductModal({
   }
 
   function addImageSlot() {
-    const next = [...images, { url: "", department: activeDept }];
+    const next = [...images, { url: "", department: activeDept, color: availableColors[0] || undefined }];
     setImages(next);
     setActiveImageIndex(next.length - 1);
   }
@@ -1228,11 +1300,20 @@ function ProductModal({
         .replace(/(^-|-$)/g, "")
         .slice(0, 50);
 
+    const formatSlotUrl = (slot: ImageSlot) => {
+      const clean = getCleanImageUrl(slot.url.trim());
+      if (!clean) return "";
+      if (slot.color && slot.color.trim()) {
+        return `${clean}#color=${encodeURIComponent(slot.color.trim())}`;
+      }
+      return clean;
+    };
+
     if (dropMode === "dual_drop") {
       try {
-        const menImgs = validImages.filter((img) => img.department === "men").map((i) => i.url);
-        const womenImgs = validImages.filter((img) => img.department === "women").map((i) => i.url);
-        const allImgs = validImages.map((i) => i.url);
+        const menImgs = validImages.filter((img) => img.department === "men").map(formatSlotUrl);
+        const womenImgs = validImages.filter((img) => img.department === "women").map(formatSlotUrl);
+        const allImgs = validImages.map(formatSlotUrl);
 
         const finalMenImgs = menImgs.length ? menImgs : allImgs;
         const finalWomenImgs = womenImgs.length ? womenImgs : allImgs;
@@ -1360,8 +1441,8 @@ function ProductModal({
     // Single product flow
     try {
       const targetDept: DeptType = (dropMode as DeptType) || activeDept;
-      const deptImgs = validImages.filter((img) => img.department === targetDept).map((i) => i.url);
-      const finalImgs = deptImgs.length ? deptImgs : validImages.map((i) => i.url);
+      const deptSlots = validImages.filter((img) => img.department === targetDept);
+      const finalImgs = (deptSlots.length ? deptSlots : validImages).map(formatSlotUrl);
 
       const singlePayload = {
         title,
@@ -2153,7 +2234,7 @@ function ProductModal({
                           {slot.url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={slot.url}
+                              src={getCleanImageUrl(slot.url)}
                               alt={`Slot ${idx + 1}`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -2178,6 +2259,18 @@ function ProductModal({
                               ? "MEN"
                               : slot.department.toUpperCase()}
                           </span>
+                          {slot.color && (
+                            <span
+                              className="absolute top-0.5 right-0.5 text-[7px] font-black uppercase px-1 rounded shadow-xs flex items-center gap-0.5 bg-black/85 text-zinc-200 border border-white/20"
+                              title={`Color: ${slot.color}`}
+                            >
+                              <span
+                                className="w-1.5 h-1.5 rounded-full inline-block shrink-0"
+                                style={{ backgroundColor: getTeeColor(slot.color).bg }}
+                              />
+                              <span className="truncate max-w-[40px]">{slot.color}</span>
+                            </span>
+                          )}
                           {isSelected && (
                             <span className="absolute bottom-0 inset-x-0 bg-amber-400 text-zinc-950 text-[9px] font-black text-center py-0.5 leading-none">
                               PREVIEW
@@ -2196,11 +2289,29 @@ function ProductModal({
                         />
                       </div>
 
-                      {/* Department switcher pill for this picture */}
+                      {/* Department & Color controls for this picture */}
                       <div
                         className="flex items-center gap-1.5 shrink-0 self-end sm:self-center"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {/* Color Dropdown */}
+                        <select
+                          value={slot.color || ""}
+                          onChange={(e) => changeSlotColor(idx, e.target.value)}
+                          className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                          title="Assign colorway to this photo"
+                        >
+                          <option value="">🎨 Color: Auto</option>
+                          {availableColors.map((c) => (
+                            <option key={c} value={c}>
+                              🎨 {c}
+                            </option>
+                          ))}
+                          {slot.color && !availableColors.includes(slot.color) && (
+                            <option value={slot.color}>🎨 {slot.color}</option>
+                          )}
+                        </select>
+
                         <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5 text-[11px]">
                           <button
                             type="button"
@@ -2362,7 +2473,7 @@ function ProductModal({
                   {previewImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={previewImageUrl}
+                      src={getCleanImageUrl(previewImageUrl)}
                       alt="preview"
                       className="w-full h-full object-cover transition-all duration-300"
                     />
@@ -2417,7 +2528,7 @@ function ProductModal({
                       </span>
                     </div>
                     <span className="font-medium text-zinc-400">
-                      {currentConfig.color || "Color"}
+                      {activeSlot?.color || currentConfig.color || "Color"}
                     </span>
                   </div>
                   <h4 className="font-bold text-zinc-100 text-sm line-clamp-1">

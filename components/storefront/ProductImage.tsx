@@ -1,5 +1,7 @@
 "use client";
 
+import { getCleanImageUrl } from "@/lib/product";
+
 type Props = {
   src: string;
   alt: string;
@@ -7,10 +9,11 @@ type Props = {
 };
 
 export function ProductImage({ src, alt, className }: Props) {
+  const cleanSrc = getCleanImageUrl(src);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={cleanSrc}
       alt={alt}
       className={className}
       onError={(e) => {

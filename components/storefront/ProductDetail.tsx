@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   formatInr,
+  getCleanImageUrl,
   getProductColorDots,
   isOutOfStock,
   percentOff,
@@ -48,7 +49,8 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
 
   const activeColorIndex = useMemo(() => {
     if (colorDots.length === 0) return 0;
-    if (activeImg < colorDots.length) return activeImg;
+    const matchIdx = colorDots.findIndex((dot) => dot.imageIndices.includes(activeImg));
+    if (matchIdx !== -1) return matchIdx;
     return 0;
   }, [colorDots, activeImg]);
 
@@ -209,7 +211,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               >
                 {product.imageUrls.map((src, i) => (
                   <button
-                    key={src}
+                    key={`${src}-${i}`}
                     type="button"
                     onClick={() => setActiveImg(i)}
                     className={`group/thumb relative aspect-[3/4] h-20 sm:h-24 shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
@@ -299,12 +301,11 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   const isActive = i === activeColorIndex;
                   return (
                     <button
-                      key={i}
+                      key={dot.name}
                       type="button"
                       aria-label={`Select ${dot.name}`}
                       onClick={() => {
-                        const targetImg = Math.min(i, product.imageUrls.length - 1);
-                        setActiveImg(targetImg);
+                        setActiveImg(dot.firstImageIndex);
                       }}
                       className={`group flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer ${
                         isActive

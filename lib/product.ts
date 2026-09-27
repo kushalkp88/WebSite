@@ -177,9 +177,33 @@ export type ColorDot = {
   bg: string;
   border: string;
   isLight: boolean;
+  firstImageIndex: number;
+  imageIndices: number[];
 };
 
-export function getTeeColor(colorName: string): Omit<ColorDot, "name"> {
+export function getCleanImageUrl(url: string): string {
+  if (!url) return "";
+  const hashIdx = url.indexOf("#");
+  return hashIdx !== -1 ? url.substring(0, hashIdx) : url;
+}
+
+export function getImageColorTag(url: string): string | null {
+  if (!url) return null;
+  const hashIdx = url.indexOf("#");
+  if (hashIdx === -1) return null;
+  const fragment = url.substring(hashIdx + 1);
+  const match = fragment.match(/color=([^&]+)/i);
+  if (match) {
+    try {
+      return decodeURIComponent(match[1]).trim();
+    } catch {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+
+export function getTeeColor(colorName: string): Omit<ColorDot, "name" | "firstImageIndex" | "imageIndices"> {
   const normalized = colorName.toLowerCase().trim();
   const sortedKeys = Object.keys(COLOR_MAP).sort((a, b) => b.length - a.length);
   for (const key of sortedKeys) {
@@ -200,43 +224,180 @@ export function getTeeColor(colorName: string): Omit<ColorDot, "name"> {
   return { bg: "#27272a", border: "#3f3f46", isLight: false };
 }
 
-export function getProductColorDots(product: {
+/**
+ * Resolves each image to its respective color name.
+ * Handles explicit tags (#color=...), 1-to-1 comma lists, filename keyword matching,
+ * and proportional distribution.
+ */
+export function resolveImageColors(product: {
   color: string;
   imageUrls: string[];
-}): ColorDot[] {
-  const parts = product.color
+}): string[] {
+  const images = product.imageUrls || [];
+  if (images.length === 0) return [];
+
+  // Parse comma-separated colors from product.color
+  const colorParts = product.color
     ? product.color
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean)
     : [];
 
-  if (parts.length > 0) {
-    return parts.map((name) => ({
-      name,
-      ...getTeeColor(name),
-    }));
+  // 1. Check for explicit tags on images (#color=...)
+  const tags = images.map((img) => getImageColorTag(img));
+  const hasAnyTags = tags.some((t) => Boolean(t));
+  if (hasAnyTags) {
+    let lastKnown = tags.find((t) => Boolean(t)) || colorParts[0] || "Standard";
+    return tags.map((t) => {
+      if (t) {
+        lastKnown = t;
+        return t;
+      }
+      return lastKnown;
+    });
   }
 
-  const detected = product.imageUrls
-    .map((imgUrl) => {
-      const lowerImg = imgUrl.toLowerCase();
-      for (const key of Object.keys(COLOR_MAP)) {
-        if (lowerImg.includes(key)) {
-          return {
-            name: key,
-            ...getTeeColor(key),
-          };
+  // 2. Exact 1-to-1 match (e.g. 4 colors listed for 4 images: "Olive Green, Olive Green, Beige, Black")
+  if (colorParts.length === images.length && images.length > 0) {
+    return [...colorParts];
+  }
+
+  // 3. Keyword matching against filename if colors exist in product.color
+  if (colorParts.length > 0) {
+    const matched = images.map((img) => {
+      const cleanLower = getCleanImageUrl(img).toLowerCase();
+      // Try exact color part first
+      const sortedParts = [...colorParts].sort((a, b) => b.length - a.length);
+      for (const cp of sortedParts) {
+        if (cleanLower.includes(cp.toLowerCase())) {
+          return cp;
+        }
+      }
+      // Try individual words (length >= 3)
+      for (const cp of sortedParts) {
+        const words = cp.toLowerCase().split(/\s+/);
+        for (const w of words) {
+          if (w.length >= 3 && cleanLower.includes(w)) {
+            return cp;
+          }
         }
       }
       return null;
-    })
-    .filter((d): d is ColorDot => d !== null);
+    });
 
-  if (detected.length > 0) {
-    return detected;
+    if (matched.some((m) => Boolean(m))) {
+      let current = matched.find((m) => Boolean(m)) || colorParts[0];
+      return matched.map((m) => {
+        if (m) {
+          current = m;
+          return m;
+        }
+        return current;
+      });
+    }
   }
 
-  return [];
+  // 4. Proportional distribution if multiple colors declared and fewer colors than images
+  if (colorParts.length > 1) {
+    const imagesPerColor = Math.ceil(images.length / colorParts.length);
+    return images.map((_, idx) => {
+      const colorIdx = Math.min(Math.floor(idx / imagesPerColor), colorParts.length - 1);
+      return colorParts[colorIdx];
+    });
+  }
+
+  // 5. Fallback: single declared color or "Standard"
+  const fallback = colorParts[0] || "Standard";
+  return images.map(() => fallback);
 }
+
+/**
+ * Returns deduplicated unique color swatches with firstImageIndex and imageIndices.
+ * This ensures storefront displays only unique colors (e.g. 3 dots for 3 colors),
+ * while mapping multiple images of the same color to the same swatch.
+ */
+export function getProductColorDots(product: {
+  color: string;
+  imageUrls: string[];
+}): ColorDot[] {
+  const images = product.imageUrls || [];
+  const assignedColors = resolveImageColors(product);
+
+  const rawParts = product.color
+    ? product.color
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+
+  const uniqueColorNames: string[] = [];
+  const seen = new Set<string>();
+
+  const addUnique = (name: string) => {
+    const key = name.trim().toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    uniqueColorNames.push(name.trim());
+  };
+
+  // Add colors in defined order
+  for (const p of rawParts) {
+    addUnique(p);
+  }
+
+  // Add any colors found in images
+  for (const c of assignedColors) {
+    addUnique(c);
+  }
+
+  // If still empty and images exist, check COLOR_MAP
+  if (uniqueColorNames.length === 0 && images.length > 0) {
+    for (const img of images) {
+      const cleanLower = getCleanImageUrl(img).toLowerCase();
+      for (const key of Object.keys(COLOR_MAP)) {
+        if (cleanLower.includes(key)) {
+          addUnique(key.charAt(0).toUpperCase() + key.slice(1));
+          break;
+        }
+      }
+    }
+  }
+
+  if (uniqueColorNames.length === 0) {
+    return [];
+  }
+
+  return uniqueColorNames.map((name) => {
+    const lowerName = name.toLowerCase();
+
+    // Find all image indices matching this color
+    const imageIndices: number[] = [];
+    assignedColors.forEach((c, idx) => {
+      if (c.toLowerCase() === lowerName) {
+        imageIndices.push(idx);
+      }
+    });
+
+    // Fallback if not matched in assignedColors
+    if (imageIndices.length === 0 && images.length > 0) {
+      images.forEach((img, idx) => {
+        const cleanLower = getCleanImageUrl(img).toLowerCase();
+        if (cleanLower.includes(lowerName)) {
+          imageIndices.push(idx);
+        }
+      });
+    }
+
+    const firstImageIndex = imageIndices.length > 0 ? imageIndices[0] : 0;
+
+    return {
+      name,
+      ...getTeeColor(name),
+      firstImageIndex,
+      imageIndices: imageIndices.length > 0 ? imageIndices : [firstImageIndex],
+    };
+  });
+}
+
 
