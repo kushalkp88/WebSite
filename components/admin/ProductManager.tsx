@@ -20,7 +20,10 @@ import {
   Sparkles,
   Copy,
   Shirt,
-  Check
+  Check,
+  Zap,
+  Layers,
+  ChevronRight
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
@@ -752,6 +755,7 @@ export function ProductManager({
       {(creating || editing) && (
         <ProductModal
           product={editing}
+          allProducts={products}
           initialImageUrl={initialCreateImageUrl}
           categories={categories.length ? categories : [...PRODUCT_CATEGORIES]}
           onClose={() => {
@@ -765,10 +769,6 @@ export function ProductManager({
             setEditing(null);
             onClearTargets?.();
             await refreshProducts();
-            onShowToast(
-              editing ? "Product updated successfully!" : "New product created successfully!",
-              "success"
-            );
           }}
         />
       )}
@@ -829,6 +829,7 @@ export function ProductManager({
 // -------------------------------------------------------------
 interface ProductModalProps {
   product: ProductDTO | null;
+  allProducts?: ProductDTO[];
   categories: string[];
   initialImageUrl?: string | null;
   onClose: () => void;
@@ -858,6 +859,7 @@ interface ImageSlot {
 
 function ProductModal({
   product,
+  allProducts,
   categories,
   initialImageUrl,
   onClose,
@@ -865,6 +867,19 @@ function ProductModal({
   onShowToast,
 }: ProductModalProps) {
   const isEditing = Boolean(product);
+
+  // Find counterpart if this print already exists in the catalog in another department
+  const counterpart = useMemo(() => {
+    if (!product || !allProducts) return null;
+    return (
+      allProducts.find(
+        (p) =>
+          p.id !== product.id &&
+          p.title.trim().toLowerCase() === product.title.trim().toLowerCase() &&
+          p.section?.toLowerCase() !== product.section?.toLowerCase()
+      ) || null
+    );
+  }, [product, allProducts]);
 
   // Base print info
   const [title, setTitle] = useState(product?.title ?? "");
@@ -879,70 +894,102 @@ function ProductModal({
   });
   const [isVisible, setIsVisible] = useState(product?.isVisible ?? true);
 
+  type DropMode = "dual_drop" | "women" | "men" | "unisex" | "kids";
+  const [dropMode, setDropMode] = useState<DropMode>(() => {
+    if (!product) return "dual_drop";
+    if (product.section === "unisex") return "unisex";
+    if (product.section === "kids") return "kids";
+    return "dual_drop";
+  });
+
   // Active department currently being edited in form sections
   const initialDept: DeptType = (product?.section?.toLowerCase() as DeptType) || "women";
   const [activeDept, setActiveDept] = useState<DeptType>(initialDept);
 
   // Department configurations
-  const [deptConfigs, setDeptConfigs] = useState<Record<DeptType, DeptConfig>>(() => ({
-    women: {
-      category: product?.section === "women" ? product.category : "Boyfriend Fit",
-      color: product?.section === "women" ? product.color : (product?.color ?? ""),
-      price: product?.price ?? 1499,
-      discountPrice: product?.discountPrice ?? 599,
-      stockS: product?.stockS ?? 10,
-      stockM: product?.stockM ?? 10,
-      stockL: product?.stockL ?? 10,
-      stockXL: product?.stockXL ?? 10,
-      rating: product?.rating ?? 4.5,
-      reviewCount: product?.reviewCount ?? 0,
-    },
-    men: {
-      category: product?.section === "men" ? product.category : "Oversized Fit",
-      color: product?.section === "men" ? product.color : (product?.color ?? ""),
-      price: product?.price ?? 1499,
-      discountPrice: product?.discountPrice ?? 599,
-      stockS: product?.stockS ?? 10,
-      stockM: product?.stockM ?? 10,
-      stockL: product?.stockL ?? 10,
-      stockXL: product?.stockXL ?? 10,
-      rating: product?.rating ?? 4.5,
-      reviewCount: product?.reviewCount ?? 0,
-    },
-    unisex: {
-      category: product?.section === "unisex" ? product.category : "Oversized Fit",
-      color: product?.color ?? "",
-      price: product?.price ?? 1499,
-      discountPrice: product?.discountPrice ?? 599,
-      stockS: 10,
-      stockM: 10,
-      stockL: 10,
-      stockXL: 10,
-      rating: 4.5,
-      reviewCount: 0,
-    },
-    kids: {
-      category: product?.section === "kids" ? product.category : "Regular/Classic Fit",
-      color: product?.color ?? "",
-      price: product?.price ?? 999,
-      discountPrice: product?.discountPrice ?? 499,
-      stockS: 10,
-      stockM: 10,
-      stockL: 10,
-      stockXL: 10,
-      rating: 4.5,
-      reviewCount: 0,
-    },
-  }));
+  const [deptConfigs, setDeptConfigs] = useState<Record<DeptType, DeptConfig>>(() => {
+    const womenSource =
+      product?.section?.toLowerCase() === "women"
+        ? product
+        : counterpart?.section?.toLowerCase() === "women"
+        ? counterpart
+        : null;
+
+    const menSource =
+      product?.section?.toLowerCase() === "men"
+        ? product
+        : counterpart?.section?.toLowerCase() === "men"
+        ? counterpart
+        : null;
+
+    return {
+      women: {
+        category: womenSource?.category ?? "Boyfriend Fit",
+        color: womenSource?.color ?? (product?.color ?? ""),
+        price: womenSource?.price ?? (product?.price ?? 1499),
+        discountPrice: womenSource ? womenSource.discountPrice : (product?.discountPrice ?? 599),
+        stockS: womenSource?.stockS ?? (product?.stockS ?? 10),
+        stockM: womenSource?.stockM ?? (product?.stockM ?? 10),
+        stockL: womenSource?.stockL ?? (product?.stockL ?? 10),
+        stockXL: womenSource?.stockXL ?? (product?.stockXL ?? 10),
+        rating: womenSource?.rating ?? (product?.rating ?? 4.5),
+        reviewCount: womenSource?.reviewCount ?? (product?.reviewCount ?? 0),
+      },
+      men: {
+        category: menSource?.category ?? "Oversized Fit",
+        color: menSource?.color ?? (product?.color ?? ""),
+        price: menSource?.price ?? (product?.price ?? 1499),
+        discountPrice: menSource ? menSource.discountPrice : (product?.discountPrice ?? 599),
+        stockS: menSource?.stockS ?? (product?.stockS ?? 10),
+        stockM: menSource?.stockM ?? (product?.stockM ?? 10),
+        stockL: menSource?.stockL ?? (product?.stockL ?? 10),
+        stockXL: menSource?.stockXL ?? (product?.stockXL ?? 10),
+        rating: menSource?.rating ?? (product?.rating ?? 4.5),
+        reviewCount: menSource?.reviewCount ?? (product?.reviewCount ?? 0),
+      },
+      unisex: {
+        category: product?.section === "unisex" ? product.category : "Oversized Fit",
+        color: product?.color ?? "",
+        price: product?.price ?? 1499,
+        discountPrice: product?.discountPrice ?? 599,
+        stockS: 10,
+        stockM: 10,
+        stockL: 10,
+        stockXL: 10,
+        rating: 4.5,
+        reviewCount: 0,
+      },
+      kids: {
+        category: product?.section === "kids" ? product.category : "Regular/Classic Fit",
+        color: product?.color ?? "",
+        price: product?.price ?? 999,
+        discountPrice: product?.discountPrice ?? 499,
+        stockS: 10,
+        stockM: 10,
+        stockL: 10,
+        stockXL: 10,
+        rating: 4.5,
+        reviewCount: 0,
+      },
+    };
+  });
 
   // Image slots with department assignment
   const [images, setImages] = useState<ImageSlot[]>(() => {
+    const slots: ImageSlot[] = [];
     if (product?.imageUrls?.length) {
-      return product.imageUrls.map((url) => ({
-        url,
-        department: initialDept,
-      }));
+      const pDept = (product.section?.toLowerCase() as DeptType) || initialDept;
+      product.imageUrls.forEach((url) => {
+        slots.push({ url, department: pDept });
+      });
     }
+    if (counterpart?.imageUrls?.length) {
+      const cDept = (counterpart.section?.toLowerCase() as DeptType) || "men";
+      counterpart.imageUrls.forEach((url) => {
+        slots.push({ url, department: cDept });
+      });
+    }
+    if (slots.length > 0) return slots;
     if (initialImageUrl) {
       return [{ url: initialImageUrl, department: initialDept }];
     }
@@ -955,6 +1002,7 @@ function ProductModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isDragOverImages, setIsDragOverImages] = useState(false);
   const [activeSlotTarget, setActiveSlotTarget] = useState<number | null>(null);
+  const uploadTargetDeptRef = useRef<DeptType | null>(null);
   const multiFileInputRef = useRef<HTMLInputElement>(null);
   const singleSlotFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -980,6 +1028,7 @@ function ProductModal({
     const slot = images[idx];
     if (slot?.department) {
       setActiveDept(slot.department);
+      onShowToast?.(`Switched to ${slot.department.toUpperCase()} drop details`, "success");
     }
   }
 
@@ -989,6 +1038,7 @@ function ProductModal({
     setImages(next);
     setActiveImageIndex(idx);
     setActiveDept(newDept);
+    onShowToast?.(`Moved photo to ${newDept.toUpperCase()} drop`, "success");
   }
 
   function switchActiveDept(dept: DeptType) {
@@ -1023,9 +1073,14 @@ function ProductModal({
     }));
   }
 
-  async function handleUploadFiles(files: FileList | File[], targetSlot?: number | null) {
+  async function handleUploadFiles(
+    files: FileList | File[], 
+    targetSlot?: number | null,
+    targetDept?: DeptType
+  ) {
     if (!files || files.length === 0) return;
 
+    const deptToAssign = targetDept || uploadTargetDeptRef.current || activeDept;
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append("files", files[i]);
@@ -1056,10 +1111,10 @@ function ProductModal({
 
       if (targetSlot !== undefined && targetSlot !== null && targetSlot >= 0) {
         const next = [...images];
-        next[targetSlot] = { url: uploadedUrls[0], department: activeDept };
+        next[targetSlot] = { url: uploadedUrls[0], department: deptToAssign };
         if (uploadedUrls.length > 1) {
           uploadedUrls.slice(1).forEach((u) => {
-            next.push({ url: u, department: activeDept });
+            next.push({ url: u, department: deptToAssign });
           });
         }
         setImages(next);
@@ -1068,15 +1123,17 @@ function ProductModal({
         const existingValid = images.filter((img) => img.url.trim() !== "");
         const newSlots: ImageSlot[] = uploadedUrls.map((u) => ({
           url: u,
-          department: activeDept,
+          department: deptToAssign,
         }));
         const combined = [...existingValid, ...newSlots];
-        setImages(combined.length ? combined : [{ url: "", department: activeDept }]);
+        setImages(combined.length ? combined : [{ url: "", department: deptToAssign }]);
         setActiveImageIndex(existingValid.length);
       }
 
+      setActiveDept(deptToAssign);
+
       onShowToast?.(
-        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} to ${activeDept.toUpperCase()} drop!`,
+        `Uploaded ${uploadedUrls.length} image${uploadedUrls.length > 1 ? "s" : ""} to ${deptToAssign.toUpperCase()} drop!`,
         "success"
       );
     } catch (err: unknown) {
@@ -1086,6 +1143,7 @@ function ProductModal({
     } finally {
       setUploadingImage(false);
       setActiveSlotTarget(null);
+      uploadTargetDeptRef.current = null;
       if (multiFileInputRef.current) multiFileInputRef.current.value = "";
       if (singleSlotFileInputRef.current) singleSlotFileInputRef.current.value = "";
     }
@@ -1120,10 +1178,12 @@ function ProductModal({
 
   const activeSlot = images[activeImageIndex];
   const previewImageUrl =
-    activeSlot?.url?.trim() ||
-    images.find((img) => img.department === activeDept && img.url.trim())?.url ||
-    images.find((img) => img.url.trim())?.url ||
-    "";
+    (activeSlot && activeSlot.department === activeDept && activeSlot.url?.trim())
+      ? activeSlot.url
+      : images.find((img) => img.department === activeDept && img.url?.trim())?.url
+      || activeSlot?.url?.trim()
+      || images.find((img) => img.url?.trim())?.url
+      || "";
 
   const currentConfig = deptConfigs[activeDept];
   const currentTotalStock =
@@ -1136,7 +1196,7 @@ function ProductModal({
   const validImages = images.filter((img) => img.url.trim() !== "");
   const menImagesCount = validImages.filter((img) => img.department === "men").length;
   const womenImagesCount = validImages.filter((img) => img.department === "women").length;
-  const isDualDrop = !isEditing && menImagesCount > 0 && womenImagesCount > 0;
+  const isDualDrop = dropMode === "dual_drop";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -1157,14 +1217,41 @@ function ProductModal({
         .replace(/(^-|-$)/g, "")
         .slice(0, 50);
 
-    if (isDualDrop) {
+    if (dropMode === "dual_drop") {
       try {
         const menImgs = validImages.filter((img) => img.department === "men").map((i) => i.url);
         const womenImgs = validImages.filter((img) => img.department === "women").map((i) => i.url);
+        const allImgs = validImages.map((i) => i.url);
+
+        const finalMenImgs = menImgs.length ? menImgs : allImgs;
+        const finalWomenImgs = womenImgs.length ? womenImgs : allImgs;
+
+        // Fetch current products list to find existing counterparts
+        const allRes = await fetch("/api/products");
+        const allProductsList: ProductDTO[] = allRes.ok ? await allRes.json() : (allProducts || []);
+
+        const existingMen = allProductsList.find(
+          (p) =>
+            p.section?.toLowerCase() === "men" &&
+            (p.title.trim().toLowerCase() === title.trim().toLowerCase() ||
+              p.slug === `${baseSlug}-men` ||
+              (product && product.id === p.id && product.section === "men"))
+        );
+
+        const existingWomen = allProductsList.find(
+          (p) =>
+            p.section?.toLowerCase() === "women" &&
+            (p.title.trim().toLowerCase() === title.trim().toLowerCase() ||
+              p.slug === `${baseSlug}-women` ||
+              (product && product.id === p.id && product.section === "women"))
+        );
+
+        const menSlug = existingMen?.slug || (product?.section === "men" ? product.slug : `${baseSlug}-men`);
+        const womenSlug = existingWomen?.slug || (product?.section === "women" ? product.slug : `${baseSlug}-women`);
 
         const menPayload = {
           title,
-          slug: `${baseSlug}-men`,
+          slug: menSlug,
           section: "men",
           category: deptConfigs.men.category,
           color: deptConfigs.men.color.trim() || "Standard",
@@ -1176,14 +1263,14 @@ function ProductModal({
           stockXL: Number(deptConfigs.men.stockXL) || 0,
           rating: Number(deptConfigs.men.rating) || 4.5,
           reviewCount: Number(deptConfigs.men.reviewCount) || 0,
-          imageUrls: menImgs.length ? menImgs : validImages.map((i) => i.url),
+          imageUrls: finalMenImgs,
           badges,
           isVisible,
         };
 
         const womenPayload = {
           title,
-          slug: `${baseSlug}-women`,
+          slug: womenSlug,
           section: "women",
           category: deptConfigs.women.category,
           color: deptConfigs.women.color.trim() || "Standard",
@@ -1195,26 +1282,54 @@ function ProductModal({
           stockXL: Number(deptConfigs.women.stockXL) || 0,
           rating: Number(deptConfigs.women.rating) || 4.5,
           reviewCount: Number(deptConfigs.women.reviewCount) || 0,
-          imageUrls: womenImgs.length ? womenImgs : validImages.map((i) => i.url),
+          imageUrls: finalWomenImgs,
           badges,
           isVisible,
         };
 
-        const [resMen, resWomen] = await Promise.all([
-          fetch("/api/products", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(menPayload),
-          }),
-          fetch("/api/products", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(womenPayload),
-          }),
-        ]);
+        const requests: Promise<Response>[] = [];
 
-        if (!resMen.ok || !resWomen.ok) {
-          throw new Error("Failed to publish both drops. Please check title and fields.");
+        // Save Men
+        if (existingMen) {
+          requests.push(
+            fetch(`/api/products/${existingMen.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(menPayload),
+            })
+          );
+        } else {
+          requests.push(
+            fetch("/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(menPayload),
+            })
+          );
+        }
+
+        // Save Women
+        if (existingWomen) {
+          requests.push(
+            fetch(`/api/products/${existingWomen.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(womenPayload),
+            })
+          );
+        } else {
+          requests.push(
+            fetch("/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(womenPayload),
+            })
+          );
+        }
+
+        const responses = await Promise.all(requests);
+        if (responses.some((r) => !r.ok)) {
+          throw new Error("Failed to publish both drops. Please check fields and try again.");
         }
 
         onShowToast?.(
@@ -1233,23 +1348,24 @@ function ProductModal({
 
     // Single product flow
     try {
-      const deptImgs = validImages.filter((img) => img.department === activeDept).map((i) => i.url);
+      const targetDept: DeptType = (dropMode as DeptType) || activeDept;
+      const deptImgs = validImages.filter((img) => img.department === targetDept).map((i) => i.url);
       const finalImgs = deptImgs.length ? deptImgs : validImages.map((i) => i.url);
 
       const singlePayload = {
         title,
         slug: baseSlug,
-        section: activeDept,
-        category: currentConfig.category,
-        color: currentConfig.color.trim() || "Standard",
-        price: Number(currentConfig.price) || 599,
-        discountPrice: currentConfig.discountPrice ? Number(currentConfig.discountPrice) : null,
-        stockS: Number(currentConfig.stockS) || 0,
-        stockM: Number(currentConfig.stockM) || 0,
-        stockL: Number(currentConfig.stockL) || 0,
-        stockXL: Number(currentConfig.stockXL) || 0,
-        rating: Number(currentConfig.rating) || 4.5,
-        reviewCount: Number(currentConfig.reviewCount) || 0,
+        section: targetDept,
+        category: deptConfigs[targetDept].category,
+        color: deptConfigs[targetDept].color.trim() || "Standard",
+        price: Number(deptConfigs[targetDept].price) || 599,
+        discountPrice: deptConfigs[targetDept].discountPrice ? Number(deptConfigs[targetDept].discountPrice) : null,
+        stockS: Number(deptConfigs[targetDept].stockS) || 0,
+        stockM: Number(deptConfigs[targetDept].stockM) || 0,
+        stockL: Number(deptConfigs[targetDept].stockL) || 0,
+        stockXL: Number(deptConfigs[targetDept].stockXL) || 0,
+        rating: Number(deptConfigs[targetDept].rating) || 4.5,
+        reviewCount: Number(deptConfigs[targetDept].reviewCount) || 0,
         imageUrls: finalImgs,
         badges,
         isVisible,
@@ -1329,59 +1445,170 @@ function ProductModal({
               </div>
             )}
 
-            {/* Department / Drop Focus Switcher */}
-            <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-2xl space-y-2.5">
+            {/* 1. Mode Selector: Dual Drop vs Single Department */}
+            <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  Select Drop to Edit / Preview:
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-200 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-amber-400" />
+                  Product Drop Mode:
                 </span>
-                {isDualDrop ? (
-                  <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" /> Both Men & Women drops active
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-zinc-500">
-                    Click to switch active department
-                  </span>
-                )}
+                <span className="text-[11px] font-medium text-zinc-400">
+                  {dropMode === "dual_drop"
+                    ? "⚡ Men & Women products published together"
+                    : `Single Drop: Publishes to ${dropMode} collection only`}
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(["women", "men", "unisex", "kids"] as const).map((d) => {
-                  const count = validImages.filter((i) => i.department === d).length;
-                  const isActive = activeDept === d;
-                  return (
+              {/* 5 Drop Mode Buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropMode("dual_drop");
+                    if (activeDept !== "women" && activeDept !== "men") setActiveDept("women");
+                  }}
+                  className={`col-span-2 sm:col-span-1 p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    dropMode === "dual_drop"
+                      ? "bg-amber-400 text-zinc-950 border-amber-400 font-bold shadow-lg shadow-amber-400/20 ring-2 ring-amber-400/50"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span className="text-xs font-black tracking-wide flex items-center gap-1">
+                    ⚡ Dual Drops
+                  </span>
+                  <span className="text-[10px] opacity-85 font-semibold">Men + Women</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropMode("women");
+                    switchActiveDept("women");
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    dropMode === "women"
+                      ? "bg-rose-600 text-white border-rose-500 font-bold shadow-lg shadow-rose-600/20 ring-2 ring-rose-500/50"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span className="text-xs font-black">👩 Women Only</span>
+                  <span className="text-[10px] opacity-80 font-medium">Single Drop</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropMode("men");
+                    switchActiveDept("men");
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    dropMode === "men"
+                      ? "bg-sky-600 text-white border-sky-500 font-bold shadow-lg shadow-sky-600/20 ring-2 ring-sky-500/50"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span className="text-xs font-black">👨 Men Only</span>
+                  <span className="text-[10px] opacity-80 font-medium">Single Drop</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropMode("unisex");
+                    switchActiveDept("unisex");
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    dropMode === "unisex"
+                      ? "bg-purple-600 text-white border-purple-500 font-bold shadow-lg shadow-purple-600/20 ring-2 ring-purple-500/50"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span className="text-xs font-black">🚻 Unisex</span>
+                  <span className="text-[10px] opacity-80 font-medium">Single Drop</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropMode("kids");
+                    switchActiveDept("kids");
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    dropMode === "kids"
+                      ? "bg-emerald-600 text-white border-emerald-500 font-bold shadow-lg shadow-emerald-600/20 ring-2 ring-emerald-500/50"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  <span className="text-xs font-black">🧒 Kids</span>
+                  <span className="text-[10px] opacity-80 font-medium">Single Drop</span>
+                </button>
+              </div>
+
+              {/* Sub-tabs when Dual Drop is active */}
+              {dropMode === "dual_drop" && (
+                <div className="pt-2.5 border-t border-zinc-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-400 font-semibold uppercase tracking-wider">
+                      Select drop tab to edit details & live preview:
+                    </span>
+                    <span className="text-amber-400 font-bold flex items-center gap-1 text-[11px]">
+                      <Sparkles className="w-3.5 h-3.5" /> Both drops saved to storefront
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <button
-                      key={d}
                       type="button"
-                      onClick={() => switchActiveDept(d)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        isActive
-                          ? d === "women"
-                            ? "bg-rose-950/70 border-rose-500 text-rose-100 ring-2 ring-rose-500/40 shadow-lg"
-                            : d === "men"
-                            ? "bg-sky-950/70 border-sky-500 text-sky-100 ring-2 ring-sky-500/40 shadow-lg"
-                            : d === "unisex"
-                            ? "bg-purple-950/70 border-purple-500 text-purple-100 ring-2 ring-purple-500/40 shadow-lg"
-                            : "bg-zinc-800 border-white text-white ring-2 ring-white/30 shadow-lg"
+                      onClick={() => switchActiveDept("women")}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        activeDept === "women"
+                          ? "bg-rose-950/70 border-rose-500 text-rose-100 ring-2 ring-rose-500/40 shadow-lg"
                           : "bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
                       }`}
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-black uppercase tracking-wider">
-                          {d === "women" ? "👩 Women" : d === "men" ? "👨 Men" : d === "unisex" ? "🚻 Unisex" : "🧒 Kids"}
-                        </span>
-                        {isActive && (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        )}
+                      <div>
+                        <div className="font-bold text-sm flex items-center gap-2">
+                          <span>👩 Women&apos;s Drop</span>
+                          {activeDept === "women" && (
+                            <span className="text-[10px] font-black uppercase bg-rose-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                              EDITING NOW
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1 font-medium">
+                          {deptConfigs.women.category} &bull; {womenImagesCount} photo{womenImagesCount === 1 ? "" : "s"}
+                        </div>
                       </div>
-                      <span className="text-[11px] opacity-80 mt-1 font-medium">
-                        {count} photo{count === 1 ? "" : "s"}
-                      </span>
+                      <ChevronRight className={`w-5 h-5 transition-transform ${activeDept === "women" ? "rotate-90 text-rose-400" : "text-zinc-600"}`} />
                     </button>
-                  );
-                })}
-              </div>
+
+                    <button
+                      type="button"
+                      onClick={() => switchActiveDept("men")}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        activeDept === "men"
+                          ? "bg-sky-950/70 border-sky-500 text-sky-100 ring-2 ring-sky-500/40 shadow-lg"
+                          : "bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-bold text-sm flex items-center gap-2">
+                          <span>👨 Men&apos;s Drop</span>
+                          {activeDept === "men" && (
+                            <span className="text-[10px] font-black uppercase bg-sky-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                              EDITING NOW
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1 font-medium">
+                          {deptConfigs.men.category} &bull; {menImagesCount} photo{menImagesCount === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                      <ChevronRight className={`w-5 h-5 transition-transform ${activeDept === "men" ? "rotate-90 text-sky-400" : "text-zinc-600"}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Department Focus Banner */}
               <div
@@ -1669,16 +1896,50 @@ function ProductModal({
                     Click any picture to preview and edit its details. Use the department tags to assign to Men or Women.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => multiFileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                    className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
-                    <span>{uploadingImage ? "Uploading..." : `Upload to ${activeDept.toUpperCase()}`}</span>
-                  </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {dropMode === "dual_drop" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          uploadTargetDeptRef.current = "women";
+                          setActiveDept("women");
+                          multiFileInputRef.current?.click();
+                        }}
+                        disabled={uploadingImage}
+                        className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
+                        <span>Upload Women&apos;s Photos</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          uploadTargetDeptRef.current = "men";
+                          setActiveDept("men");
+                          multiFileInputRef.current?.click();
+                        }}
+                        disabled={uploadingImage}
+                        className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
+                        <span>Upload Men&apos;s Photos</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        uploadTargetDeptRef.current = activeDept;
+                        multiFileInputRef.current?.click();
+                      }}
+                      disabled={uploadingImage}
+                      className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                    >
+                      <Upload className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
+                      <span>{uploadingImage ? "Uploading..." : `Upload to ${activeDept.toUpperCase()}`}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={addImageSlot}
@@ -1689,6 +1950,40 @@ function ProductModal({
                   </button>
                 </div>
               </div>
+
+              {/* Status summary of Men and Women photo counts in Dual Drop */}
+              {dropMode === "dual_drop" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div
+                    className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                      womenImagesCount > 0
+                        ? "bg-rose-950/20 border-rose-800/40 text-rose-300"
+                        : "bg-amber-950/30 border-amber-800/50 text-amber-300"
+                    }`}
+                  >
+                    <span>Women&apos;s drop: <strong>{womenImagesCount}</strong> photo{womenImagesCount === 1 ? "" : "s"}</span>
+                    {womenImagesCount === 0 && (
+                      <span className="text-[10px] font-bold uppercase bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded">
+                        Missing photos
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                      menImagesCount > 0
+                        ? "bg-sky-950/20 border-sky-800/40 text-sky-300"
+                        : "bg-amber-950/30 border-amber-800/50 text-amber-300"
+                    }`}
+                  >
+                    <span>Men&apos;s drop: <strong>{menImagesCount}</strong> photo{menImagesCount === 1 ? "" : "s"}</span>
+                    {menImagesCount === 0 && (
+                      <span className="text-[10px] font-bold uppercase bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded">
+                        Missing photos
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Hidden file input for multi-file upload */}
               <input
@@ -1772,6 +2067,21 @@ function ProductModal({
                           ) : (
                             <ImageIcon className="w-4 h-4 text-zinc-600" />
                           )}
+                          <span
+                            className={`absolute top-0.5 left-0.5 text-[8px] font-black uppercase px-1 rounded shadow-xs ${
+                              slot.department === "women"
+                                ? "bg-rose-600 text-white"
+                                : slot.department === "men"
+                                ? "bg-sky-600 text-white"
+                                : "bg-purple-600 text-white"
+                            }`}
+                          >
+                            {slot.department === "women"
+                              ? "WOMEN"
+                              : slot.department === "men"
+                              ? "MEN"
+                              : slot.department.toUpperCase()}
+                          </span>
                           {isSelected && (
                             <span className="absolute bottom-0 inset-x-0 bg-amber-400 text-zinc-950 text-[9px] font-black text-center py-0.5 leading-none">
                               PREVIEW
@@ -2077,13 +2387,18 @@ function ProductModal({
                 : "bg-white hover:bg-zinc-100 text-zinc-950"
             }`}
           >
-            {busy
-              ? "Saving Product..."
-              : isEditing
-              ? "Save Changes"
-              : isDualDrop
-              ? `⚡ Publish Dual Drops (${menImagesCount} Men & ${womenImagesCount} Women)`
-              : `Create ${activeDept === "women" ? "Women's" : activeDept === "men" ? "Men's" : activeDept === "unisex" ? "Unisex" : "Kids"} Product`}
+            {busy ? (
+              "Saving Products..."
+            ) : isDualDrop ? (
+              <span className="flex items-center gap-1.5">
+                <Zap className="w-4 h-4 fill-zinc-950" />
+                ⚡ Publish Dual Drops (Save Men &amp; Women)
+              </span>
+            ) : isEditing ? (
+              "Save Changes"
+            ) : (
+              `Create ${activeDept === "women" ? "Women's" : activeDept === "men" ? "Men's" : activeDept === "unisex" ? "Unisex" : "Kids"} Product`
+            )}
           </button>
         </div>
       </div>
