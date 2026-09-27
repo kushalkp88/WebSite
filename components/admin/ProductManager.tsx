@@ -23,7 +23,8 @@ import {
   Check,
   Zap,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Minus
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock, percentOff, PRODUCT_CATEGORIES } from "@/lib/product";
@@ -1073,6 +1074,16 @@ function ProductModal({
     }));
   }
 
+  function setAllStock(val: number) {
+    updateActiveDeptConfig({
+      stockS: val,
+      stockM: val,
+      stockL: val,
+      stockXL: val,
+    });
+    onShowToast?.(`Set all sizes for ${activeDept.toUpperCase()} to ${val} units`, "success");
+  }
+
   async function handleUploadFiles(
     files: FileList | File[], 
     targetSlot?: number | null,
@@ -1822,29 +1833,111 @@ function ProductModal({
             </div>
 
             {/* Inventory per Size */}
-            <div className="space-y-4 pt-4 border-t border-zinc-800/80">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                  3. Size Inventory Breakdown ({activeDept.toUpperCase()})
-                </h3>
-                <span className="text-xs font-bold bg-zinc-800 px-2.5 py-0.5 rounded-full text-zinc-300">
-                  Total: {currentTotalStock} units
-                </span>
+            <div className="space-y-3.5 pt-4 border-t border-zinc-800/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                    <span>3. Size Inventory Breakdown</span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                      activeDept === "women"
+                        ? "bg-rose-950/80 text-rose-300 border border-rose-800/50"
+                        : activeDept === "men"
+                        ? "bg-sky-950/80 text-sky-300 border border-sky-800/50"
+                        : "bg-purple-950/80 text-purple-300 border border-purple-800/50"
+                    }`}>
+                      {activeDept.toUpperCase()} DROP
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Configure stock units per size or apply quick batch presets
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Quick batch presets */}
+                  <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 text-[11px] text-zinc-400">
+                    <span className="px-1.5 font-medium text-zinc-500">Preset:</span>
+                    <button
+                      type="button"
+                      onClick={() => setAllStock(10)}
+                      className="px-2 py-0.5 rounded-lg hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer font-bold"
+                      title="Set 10 units for all sizes"
+                    >
+                      10 ea
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAllStock(20)}
+                      className="px-2 py-0.5 rounded-lg hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer font-bold"
+                      title="Set 20 units for all sizes"
+                    >
+                      20 ea
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAllStock(0)}
+                      className="px-2 py-0.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-colors cursor-pointer font-bold"
+                      title="Set 0 units for all sizes (Sold Out)"
+                    >
+                      Zero
+                    </button>
+                  </div>
+
+                  {/* Total Units Badge */}
+                  <span className={`text-xs font-black px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow-xs shrink-0 ${
+                    currentTotalStock === 0
+                      ? "bg-red-950/50 text-red-400 border-red-800/60"
+                      : "bg-zinc-950 text-zinc-100 border-zinc-800"
+                  }`}>
+                    <span className="text-[10px] uppercase font-bold text-zinc-400">Total:</span>
+                    <span>{currentTotalStock} units</span>
+                  </span>
+                </div>
               </div>
 
+              {/* 4 Size Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {(["stockS", "stockM", "stockL", "stockXL"] as const).map((key) => {
                   const sizeLabel = key.replace("stock", "");
                   const count = currentConfig[key];
+                  const isZero = count === 0;
+                  const isLow = count > 0 && count <= 3;
                   return (
-                    <div key={key} className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-zinc-300 mb-2">
-                        <span>Size {sizeLabel}</span>
-                        <span className={count === 0 ? "text-red-400" : "text-emerald-400"}>
-                          {count}
+                    <div
+                      key={key}
+                      className={`relative bg-zinc-950 border rounded-2xl p-3 flex flex-col justify-between gap-3 transition-all shadow-sm ${
+                        isZero
+                          ? "border-red-900/40 bg-red-950/10 hover:border-red-800/60"
+                          : isLow
+                          ? "border-amber-900/40 hover:border-amber-800/60"
+                          : "border-zinc-800 hover:border-zinc-700 bg-zinc-950/80"
+                      }`}
+                    >
+                      {/* Card Header: Size Pill + Stock Status */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-700/80 font-black text-xs text-white flex items-center justify-center shadow-xs">
+                            {sizeLabel}
+                          </span>
+                          <span className="text-xs font-bold text-zinc-200">
+                            Size {sizeLabel}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            isZero
+                              ? "bg-red-950/70 text-red-400 border-red-800/60"
+                              : isLow
+                              ? "bg-amber-950/70 text-amber-300 border-amber-800/60"
+                              : "bg-emerald-950/70 text-emerald-400 border-emerald-800/60"
+                          }`}
+                        >
+                          {isZero ? "Sold Out" : `${count} left`}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1">
+
+                      {/* Stepper Control: - [count] + */}
+                      <div className="flex items-center w-full bg-zinc-900/90 border border-zinc-800 rounded-xl overflow-hidden p-0.5 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-500 transition-all">
                         <button
                           type="button"
                           onClick={() =>
@@ -1852,9 +1945,11 @@ function ProductModal({
                               [key]: Math.max(0, count - 1),
                             } as Partial<DeptConfig>)
                           }
-                          className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer"
+                          disabled={isZero}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-zinc-600 cursor-pointer active:scale-90 shrink-0"
+                          aria-label={`Decrease size ${sizeLabel}`}
                         >
-                          -
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
                         <input
                           type="number"
@@ -1865,7 +1960,7 @@ function ProductModal({
                               [key]: Math.max(0, parseInt(e.target.value) || 0),
                             } as Partial<DeptConfig>)
                           }
-                          className="flex-1 bg-zinc-900 border border-zinc-800 text-center text-xs py-1 rounded-lg text-white font-mono"
+                          className="w-full min-w-0 bg-transparent text-center text-xs sm:text-sm font-bold text-white font-mono focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none py-1"
                         />
                         <button
                           type="button"
@@ -1874,9 +1969,10 @@ function ProductModal({
                               [key]: count + 1,
                             } as Partial<DeptConfig>)
                           }
-                          className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer active:scale-90 shrink-0"
+                          aria-label={`Increase size ${sizeLabel}`}
                         >
-                          +
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
