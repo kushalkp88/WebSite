@@ -69,6 +69,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const row = await prisma.product.update({ where: { id }, data });
     revalidatePath("/");
     revalidatePath("/catalog");
+    revalidatePath("/admin");
     return NextResponse.json(serializeProduct(row));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to update product";
@@ -82,6 +83,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     await prisma.product.delete({ where: { id } });
     revalidatePath("/");
     revalidatePath("/catalog");
+    revalidatePath("/admin");
     return NextResponse.json({ success: true, ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to delete product";

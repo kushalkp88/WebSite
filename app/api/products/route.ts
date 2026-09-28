@@ -64,6 +64,7 @@ export async function POST(req: Request) {
 
     revalidatePath("/");
     revalidatePath("/catalog");
+    revalidatePath("/admin");
 
     return NextResponse.json(serializeProduct(row), { status: 201 });
   } catch (err: unknown) {

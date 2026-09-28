@@ -1,0 +1,128 @@
+{
+  "colors": [
+    {
+      "name": "Black",
+      "hex": "#18181b",
+      "border": "#27272a"
+    },
+    {
+      "name": "Acid Wash Black",
+      "hex": "#232326",
+      "border": "#52525b"
+    },
+    {
+      "name": "Beige",
+      "hex": "#d4b996",
+      "border": "#c2a37d"
+    },
+    {
+      "name": "Maroon",
+      "hex": "#800020",
+      "border": "#991b1b"
+    },
+    {
+      "name": "Navy Blue",
+      "hex": "#1e293b",
+      "border": "#334155"
+    },
+    {
+      "name": "Charcoal Grey",
+      "hex": "#374151",
+      "border": "#4b5563"
+    },
+    {
+      "name": "Olive Green",
+      "hex": "#556b2f",
+      "border": "#6b8e23"
+    },
+    {
+      "name": "Coffee Brown",
+      "hex": "#451a03",
+      "border": "#92400e"
+    },
+    {
+      "name": "Dusky Pink",
+      "hex": "#ec4899",
+      "border": "#f472b6"
+    },
+    {
+      "name": "Mustard Yellow",
+      "hex": "#d97706",
+      "border": "#f59e0b"
+    },
+    {
+      "name": "Heather Grey",
+      "hex": "#9ca3af"
+    },
+    {
+      "name": "Teal",
+      "hex": "#0d9488"
+    },
+    {
+      "name": "Matcha Green",
+      "hex": "#739e82"
+    },
+    {
+      "name": "Sky Blue",
+      "hex": "#38bdf8"
+    },
+    {
+      "name": "Pale Yellow",
+      "hex": "#fef08a"
+    },
+    {
+      "name": "Baby Pink",
+      "hex": "#f472b6"
+    },
+    {
+      "name": "Mocha Brown",
+      "hex": "#78350f"
+    },
+    {
+      "name": "Bottle Green",
+      "hex": "#064e3b"
+    },
+    {
+      "name": "Lavender",
+      "hex": "#c4b5fd"
+    },
+    {
+      "name": "Cool Blue",
+      "hex": "#1d4ed8"
+    },
+    {
+      "name": "Royal Blue",
+      "hex": "#2563eb"
+    },
+    {
+      "name": "Dark Green",
+      "hex": "#15803d"
+    }
+  ],
+  "fits": [
+    {
+      "name": "Oversized Fit",
+      "description": "Relaxed drop-shoulder silhouette"
+    },
+    {
+      "name": "Regular/Classic Fit",
+      "description": "Standard everyday fit"
+    },
+    {
+      "name": "Boyfriend Fit",
+      "description": "Slightly oversized casual look"
+    },
+    {
+      "name": "Crop Top",
+      "description": "Short length modern street cut"
+    },
+    {
+      "name": "Sweatshirt",
+      "description": "Cozy fleece crewneck"
+    },
+    {
+      "name": "Hoodie",
+      "description": "Classic pullover hooded sweatshirt"
+    }
+  ]
+}

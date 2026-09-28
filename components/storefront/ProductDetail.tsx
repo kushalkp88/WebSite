@@ -336,13 +336,11 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-900">
                 Select Size
               </span>
-              <span className="text-xs text-zinc-500">
-                {size && selectedSizeStock > 0 && selectedSizeStock <= 5 ? (
-                  <strong className="text-amber-600">Only {selectedSizeStock} left!</strong>
-                ) : (
-                  "Oversized Boxy Fit"
-                )}
-              </span>
+              {size && selectedSizeStock > 0 && selectedSizeStock <= 5 && (
+                <span className="text-xs text-amber-600 font-semibold">
+                  Only {selectedSizeStock} left!
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-2.5">
@@ -424,7 +422,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               {openSection === "fabric" && (
                 <div className="mt-3 space-y-2 text-xs text-zinc-600 leading-relaxed animate-fade-in">
                   <p>• <strong>240 GSM</strong> Heavyweight French Terry 100% Combed Cotton.</p>
-                  <p>• Drop shoulder, boxy silhouette designed for standard oversized drape.</p>
+                  <p>• Tailored silhouette designed for comfortable everyday drape.</p>
                   <p>• High-density screen print with fade-resistant discharge inks.</p>
                   <p>• Pre-shrunk & bio-washed for ultra-soft handfeel.</p>
                 </div>

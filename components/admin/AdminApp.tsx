@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   LayoutDashboard, 
@@ -13,7 +13,8 @@ import {
   AlertCircle,
   ChevronRight,
   FolderOpen,
-  UploadCloud
+  UploadCloud,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import type { ThemePayload } from "@/lib/theme";
@@ -21,6 +22,7 @@ import { OverviewPanel } from "./OverviewPanel";
 import { ProductManager } from "./ProductManager";
 import { ThemePanel } from "./ThemePanel";
 import { MediaManager } from "./MediaManager";
+import { OptionsManager } from "./OptionsManager";
 
 interface Toast {
   id: string;
@@ -30,12 +32,13 @@ interface Toast {
 
 export function AdminApp({
   theme,
-  products,
+  products: initialProducts,
 }: {
   theme: ThemePayload;
   products: ProductDTO[];
 }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "theme" | "media">("overview");
+  const [products, setProducts] = useState<ProductDTO[]>(initialProducts);
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "options" | "media" | "theme">("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -43,6 +46,28 @@ export function AdminApp({
   const [targetEditProduct, setTargetEditProduct] = useState<ProductDTO | null>(null);
   const [targetCreateProduct, setTargetCreateProduct] = useState(false);
   const [targetCreateImageUrl, setTargetCreateImageUrl] = useState<string | null>(null);
+
+  const refreshProducts = async () => {
+    try {
+      const res = await fetch("/api/products", { cache: "no-store" });
+      if (res.ok) {
+        const data: ProductDTO[] = await res.json();
+        setProducts(data);
+      }
+    } catch (err) {
+      console.error("Failed to refresh products:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshProducts();
+  }, []);
+
+  useEffect(() => {
+    if (initialProducts) {
+      setProducts(initialProducts);
+    }
+  }, [initialProducts]);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     const id = Math.random().toString(36).substring(2, 9);
@@ -168,7 +193,31 @@ export function AdminApp({
             </span>
           </button>
 
-          {/* Tab 3: Media & Image Uploads */}
+          {/* Tab 3: Colors & Fits */}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "options"}
+            onClick={() => {
+              setActiveTab("options");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === "options"
+                ? "bg-zinc-800 text-white shadow-sm border border-zinc-700/60"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <SlidersHorizontal className={`w-4 h-4 ${activeTab === "options" ? "text-amber-400" : ""}`} />
+              <span>Colors & Fits</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/20">
+              Dropdowns
+            </span>
+          </button>
+
+          {/* Tab 4: Media & Image Uploads */}
           <button
             type="button"
             role="tab"
@@ -187,7 +236,7 @@ export function AdminApp({
             <span>Media & Uploads</span>
           </button>
 
-          {/* Tab 4: Theme & Customizer */}
+          {/* Tab 5: Theme & Customizer */}
           <button
             type="button"
             role="tab"
@@ -247,6 +296,8 @@ export function AdminApp({
                   ? "Dashboard Overview"
                   : activeTab === "products"
                   ? "Product Catalog"
+                  : activeTab === "options"
+                  ? "Colors & Fits Management"
                   : activeTab === "media"
                   ? "Media & Uploads"
                   : "Theme Customizer"}
@@ -294,6 +345,7 @@ export function AdminApp({
               editingTarget={targetEditProduct}
               creatingTarget={targetCreateProduct}
               initialCreateImageUrl={targetCreateImageUrl}
+              onProductsUpdated={refreshProducts}
               onClearTargets={() => {
                 setTargetEditProduct(null);
                 setTargetCreateProduct(false);
@@ -301,6 +353,10 @@ export function AdminApp({
               }}
               onShowToast={showToast}
             />
+          )}
+
+          {activeTab === "options" && (
+            <OptionsManager onShowToast={showToast} />
           )}
 
           {activeTab === "media" && (

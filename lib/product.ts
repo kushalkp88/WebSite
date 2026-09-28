@@ -7,14 +7,39 @@ export const PRODUCT_SECTIONS = ["men", "women", "kids", "unisex"] as const;
 export type ProductSection = (typeof PRODUCT_SECTIONS)[number];
 
 export const PRODUCT_CATEGORIES = [
-  "Regular/Classic Fit",
   "Oversized Fit",
+  "Regular/Classic Fit",
+  "Boxy Fit",
+  "Relaxed Fit",
   "Boyfriend Fit",
   "Crop Top",
   "Sweatshirt",
   "Hoodie",
 ] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+export const STANDARD_FITS = PRODUCT_CATEGORIES;
+
+export const STANDARD_COLORS = [
+  "Black",
+  "Acid Wash Black",
+  "White",
+  "Off White",
+  "Beige",
+  "Maroon",
+  "Navy Blue",
+  "Royal Blue",
+  "Charcoal Grey",
+  "Grey",
+  "Olive Green",
+  "Bottle Green",
+  "Brown",
+  "Rust",
+  "Red",
+  "Lavender",
+  "Purple",
+  "Pink",
+  "Mustard Yellow",
+] as const;
 
 export type ProductDTO = {
   id: string;
@@ -141,15 +166,20 @@ export function serializeProduct(p: StorefrontProductRow | Product): ProductDTO 
 
 export const COLOR_MAP: Record<string, { bg: string; border?: string }> = {
   black: { bg: "#18181b", border: "#27272a" },
+  "acid wash black": { bg: "#232326", border: "#52525b" },
+  "acid wash": { bg: "#27272a", border: "#52525b" },
   white: { bg: "#f8fafc", border: "#cbd5e1" },
+  "off white": { bg: "#faf7f2", border: "#e5e0d8" },
   grey: { bg: "#6b7280", border: "#9ca3af" },
   gray: { bg: "#6b7280", border: "#9ca3af" },
   navy: { bg: "#1e293b", border: "#334155" },
+  "navy blue": { bg: "#1e293b", border: "#334155" },
   "royal blue": { bg: "#2563eb", border: "#3b82f6" },
   blue: { bg: "#3b82f6", border: "#60a5fa" },
   red: { bg: "#dc2626", border: "#ef4444" },
   beige: { bg: "#d4b996", border: "#c2a37d" },
   "olive green": { bg: "#556b2f", border: "#6b8e23" },
+  "bottle green": { bg: "#064e3b", border: "#047857" },
   olive: { bg: "#556b2f", border: "#6b8e23" },
   green: { bg: "#16a34a", border: "#22c55e" },
   teal: { bg: "#0d9488", border: "#14b8a6" },
@@ -165,6 +195,7 @@ export const COLOR_MAP: Record<string, { bg: string; border?: string }> = {
   lavender: { bg: "#c4b5fd", border: "#a78bfa" },
   cream: { bg: "#fef3c7", border: "#fde68a" },
   mustard: { bg: "#d97706", border: "#f59e0b" },
+  "mustard yellow": { bg: "#d97706", border: "#f59e0b" },
   coral: { bg: "#f43f5e", border: "#fb7185" },
   cyan: { bg: "#06b6d4", border: "#22d3ee" },
   magenta: { bg: "#d946ef", border: "#e879f9" },
@@ -192,7 +223,23 @@ export function getImageColorTag(url: string): string | null {
   const hashIdx = url.indexOf("#");
   if (hashIdx === -1) return null;
   const fragment = url.substring(hashIdx + 1);
-  const match = fragment.match(/color=([^&]+)/i);
+  const match = fragment.match(/(?:^|[&?#])color=([^&]+)/i);
+  if (match) {
+    try {
+      return decodeURIComponent(match[1]).trim();
+    } catch {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+
+export function getImageFitTag(url: string): string | null {
+  if (!url) return null;
+  const hashIdx = url.indexOf("#");
+  if (hashIdx === -1) return null;
+  const fragment = url.substring(hashIdx + 1);
+  const match = fragment.match(/(?:^|[&?#])fit=([^&]+)/i);
   if (match) {
     try {
       return decodeURIComponent(match[1]).trim();
