@@ -3,14 +3,23 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { getImageKitClient, isImageKitConfigured } from "@/lib/imagekit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
-  "image/svg+xml",
   "image/avif",
+]);
+
+const ALLOWED_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".gif",
+  ".avif",
 ]);
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -35,6 +44,15 @@ function sanitizeFilename(originalName: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`upload:${ip}`, 20, 60_000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many upload requests. Please wait a minute before uploading more files." },
+        { status: 429 },
+      );
+    }
+
     const formData = await request.formData();
     const files: File[] = [];
 
@@ -67,10 +85,20 @@ export async function POST(request: NextRequest) {
     const imagekit = useImageKit ? getImageKitClient() : null;
 
     for (const file of files) {
+      const ext = path.extname(file.name).toLowerCase();
+      if (!ALLOWED_EXTENSIONS.has(ext)) {
+        return NextResponse.json(
+          {
+            error: `Disallowed file extension: "${ext}". Allowed: JPG, PNG, WebP, GIF, AVIF.`,
+          },
+          { status: 400 },
+        );
+      }
+
       if (!ALLOWED_MIME_TYPES.has(file.type)) {
         return NextResponse.json(
           {
-            error: `Unsupported file type: "${file.type}". Allowed types: JPG, PNG, WebP, GIF, SVG, AVIF.`,
+            error: `Unsupported file type: "${file.type}". Allowed types: JPG, PNG, WebP, GIF, AVIF.`,
           },
           { status: 400 },
         );

@@ -8,31 +8,40 @@ export const dynamic = "force-dynamic";
 const DATA_DIR = path.join(process.cwd(), "data");
 const OPTIONS_FILE = path.join(DATA_DIR, "options.json");
 
+// In-memory fallback for read-only serverless runtimes (e.g. Vercel)
+let memoryOptions: ProductOptions | null = null;
+
 async function ensureOptionsFile(): Promise<ProductOptions> {
+  if (memoryOptions) return memoryOptions;
   try {
     const raw = await fs.readFile(OPTIONS_FILE, "utf-8");
     const parsed = JSON.parse(raw) as Partial<ProductOptions>;
     if (parsed && Array.isArray(parsed.colors) && Array.isArray(parsed.fits)) {
-      return {
+      memoryOptions = {
         colors: parsed.colors.length > 0 ? parsed.colors : DEFAULT_OPTIONS.colors,
         fits: parsed.fits.length > 0 ? parsed.fits : DEFAULT_OPTIONS.fits,
       };
+      return memoryOptions;
     }
   } catch {
-    // File doesn't exist or is invalid JSON; create directory & file with defaults
+    // If file cannot be read, attempt creation only if writable
     try {
       await fs.mkdir(DATA_DIR, { recursive: true });
       await fs.writeFile(OPTIONS_FILE, JSON.stringify(DEFAULT_OPTIONS, null, 2), "utf-8");
-    } catch (writeErr) {
-      console.warn("Could not write initial options.json:", writeErr);
+    } catch {
+      // Ignore read-only filesystem errors in serverless
     }
   }
-  return DEFAULT_OPTIONS;
+  return memoryOptions ?? DEFAULT_OPTIONS;
 }
 
 export async function GET() {
   const options = await ensureOptionsFile();
-  return NextResponse.json(options);
+  return NextResponse.json(options, {
+    headers: {
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -58,8 +67,15 @@ export async function POST(req: Request) {
       })).filter((f) => f.name.length > 0),
     };
 
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(OPTIONS_FILE, JSON.stringify(cleanedPayload, null, 2), "utf-8");
+    memoryOptions = cleanedPayload;
+
+    // Persist to filesystem if environment allows writes (e.g. local dev / container)
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      await fs.writeFile(OPTIONS_FILE, JSON.stringify(cleanedPayload, null, 2), "utf-8");
+    } catch {
+      // In serverless / read-only filesystem, options remain in memoryOptions
+    }
 
     return NextResponse.json(cleanedPayload);
   } catch (err) {

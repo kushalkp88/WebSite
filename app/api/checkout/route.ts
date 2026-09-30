@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { SIZES, type Size } from "@/lib/product";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,15 @@ const STANDARD_SHIPPING_FEE = 99;
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`checkout:${ip}`, 10, 60_000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many checkout attempts. Please wait a moment before trying again." },
+        { status: 429 }
+      );
+    }
+
     let body: CheckoutRequestBody;
     try {
       body = await req.json();
