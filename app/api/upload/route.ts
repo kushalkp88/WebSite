@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
+import { getImageKitClient, isImageKitConfigured } from "@/lib/imagekit";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -26,7 +27,7 @@ function sanitizeFilename(originalName: string) {
     .replace(/[^a-z0-9_-]/g, "-")
     .replace(/-+/g, "-")
     .slice(0, 40);
-  
+
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return `${nameWithoutExt || "image"}-${timestamp}-${random}${ext}`;
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
 
     // Collect all uploaded files from form data
     for (const [key, value] of formData.entries()) {
-      if (value instanceof File && (key === "file" || key === "files" || key.startsWith("file"))) {
+      if (
+        value instanceof File &&
+        (key === "file" || key === "files" || key.startsWith("file"))
+      ) {
         files.push(value);
       }
     }
@@ -47,14 +51,20 @@ export async function POST(request: NextRequest) {
     if (files.length === 0) {
       return NextResponse.json(
         { error: "No image file provided in request" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const uploadDir = getUploadDir();
-    await fs.mkdir(uploadDir, { recursive: true });
+    const savedFiles: Array<{
+      url: string;
+      name: string;
+      size: number;
+      type: string;
+    }> = [];
 
-    const savedFiles: Array<{ url: string; name: string; size: number; type: string }> = [];
+    // Check if ImageKit is configured in environment
+    const useImageKit = isImageKitConfigured();
+    const imagekit = useImageKit ? getImageKitClient() : null;
 
     for (const file of files) {
       if (!ALLOWED_MIME_TYPES.has(file.type)) {
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
           {
             error: `Unsupported file type: "${file.type}". Allowed types: JPG, PNG, WebP, GIF, SVG, AVIF.`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -71,24 +81,44 @@ export async function POST(request: NextRequest) {
           {
             error: `File "${file.name}" exceeds maximum allowed size of 10MB.`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       const filename = sanitizeFilename(file.name);
-      const filePath = path.join(uploadDir, filename);
-
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      await fs.writeFile(filePath, buffer);
 
-      const url = `/uploads/${filename}`;
-      savedFiles.push({
-        url,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      });
+      if (imagekit) {
+        // Upload directly to ImageKit cloud under /products
+        const uploadResult = await imagekit.upload({
+          file: buffer,
+          fileName: filename,
+          folder: "/products",
+          useUniqueFileName: true,
+        });
+
+        savedFiles.push({
+          url: uploadResult.url,
+          name: uploadResult.name,
+          size: uploadResult.size,
+          type: file.type,
+        });
+      } else {
+        // Fallback for local development if keys are not yet added
+        const uploadDir = getUploadDir();
+        await fs.mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, filename);
+        await fs.writeFile(filePath, buffer);
+
+        const url = `/uploads/${filename}`;
+        savedFiles.push({
+          url,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        });
+      }
     }
 
     return NextResponse.json({
@@ -98,16 +128,14 @@ export async function POST(request: NextRequest) {
       files: savedFiles,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to upload file";
+    const message =
+      error instanceof Error ? error.message : "Failed to upload file";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
-    const uploadDir = getUploadDir();
-    await fs.mkdir(uploadDir, { recursive: true });
-
     // Fetch all products to track image usage
     const products = await prisma.product.findMany({
       select: { title: true, slug: true, imageUrls: true },
@@ -118,42 +146,111 @@ export async function GET() {
       try {
         const urls = JSON.parse(p.imageUrls || "[]") as string[];
         for (const u of urls) {
-          if (!usageMap.has(u)) usageMap.set(u, []);
-          usageMap.get(u)!.push({ title: p.title, slug: p.slug });
+          const cleanUrl = u.split("?")[0];
+          if (!usageMap.has(cleanUrl)) usageMap.set(cleanUrl, []);
+          usageMap.get(cleanUrl)!.push({ title: p.title, slug: p.slug });
         }
       } catch {
         // ignore JSON parse errors
       }
     }
 
-    const entries = await fs.readdir(uploadDir, { withFileTypes: true });
-    const imageFiles = [];
+    const imageFiles: Array<{
+      url: string;
+      filename: string;
+      size: number;
+      mtime: string;
+      usedIn: Array<{ title: string; slug: string }>;
+    }> = [];
 
-    for (const entry of entries) {
-      if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if ([".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".avif"].includes(ext)) {
-          const filePath = path.join(uploadDir, entry.name);
-          const stat = await fs.stat(filePath);
-          const url = `/uploads/${entry.name}`;
-          const usedIn = usageMap.get(url) || [];
-          imageFiles.push({
-            url,
-            filename: entry.name,
-            size: stat.size,
-            mtime: stat.mtime.toISOString(),
-            usedIn,
-          });
+    // 1. Fetch cloud media from ImageKit if configured
+    if (isImageKitConfigured()) {
+      try {
+        const imagekit = getImageKitClient();
+        const files = await imagekit.listFiles({
+          path: "/products",
+          limit: 100,
+        });
+
+        if (Array.isArray(files)) {
+          for (const f of files) {
+            if (f.type !== "file") continue;
+            // Only include image files
+            const ext = path.extname(f.name).toLowerCase();
+            if (
+              [
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".gif",
+                ".svg",
+                ".avif",
+              ].includes(ext)
+            ) {
+              const cleanUrl = f.url.split("?")[0];
+              imageFiles.push({
+                url: f.url,
+                filename: f.name,
+                size: f.size,
+                mtime: f.updatedAt || f.createdAt || new Date().toISOString(),
+                usedIn: usageMap.get(cleanUrl) || [],
+              });
+            }
+          }
         }
+      } catch (cloudErr) {
+        console.error("Failed to list ImageKit files:", cloudErr);
       }
     }
 
+    // 2. Also check local uploads directory for backward compatibility
+    try {
+      const uploadDir = getUploadDir();
+      const entries = await fs.readdir(uploadDir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase();
+          if (
+            [
+              ".jpg",
+              ".jpeg",
+              ".png",
+              ".webp",
+              ".gif",
+              ".svg",
+              ".avif",
+            ].includes(ext)
+          ) {
+            const filePath = path.join(uploadDir, entry.name);
+            const stat = await fs.stat(filePath);
+            const url = `/uploads/${entry.name}`;
+            const cleanUrl = url.split("?")[0];
+            const usedIn = usageMap.get(cleanUrl) || [];
+            imageFiles.push({
+              url,
+              filename: entry.name,
+              size: stat.size,
+              mtime: stat.mtime.toISOString(),
+              usedIn,
+            });
+          }
+        }
+      }
+    } catch {
+      // Ignore if public/uploads directory does not exist
+    }
+
     // Sort newest first
-    imageFiles.sort((a, b) => new Date(b.mtime).getTime() - new Date(a.mtime).getTime());
+    imageFiles.sort(
+      (a, b) => new Date(b.mtime).getTime() - new Date(a.mtime).getTime(),
+    );
 
     return NextResponse.json({ images: imageFiles });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to fetch uploads";
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch uploads";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -161,11 +258,15 @@ export async function GET() {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    let target: string | undefined = searchParams.get("url") || searchParams.get("filename") || undefined;
+    let target: string | undefined =
+      searchParams.get("url") || searchParams.get("filename") || undefined;
 
     if (!target) {
       try {
-        const body = (await request.json()) as { url?: string; filename?: string };
+        const body = (await request.json()) as {
+          url?: string;
+          filename?: string;
+        };
         target = body.url || body.filename;
       } catch {
         // No JSON body
@@ -173,27 +274,61 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!target) {
-      return NextResponse.json({ error: "Missing file URL or filename" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing file URL or filename" },
+        { status: 400 },
+      );
     }
 
-    const filename = path.basename(target);
-    const uploadDir = getUploadDir();
-    const filePath = path.join(uploadDir, filename);
+    let deleted = false;
+    const filename = path.basename(target.split("?")[0]);
 
-    // Ensure resolved path stays inside uploadDir to prevent path traversal
-    if (!filePath.startsWith(uploadDir)) {
-      return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
+    // 1. If target is an ImageKit URL or ImageKit is configured, attempt ImageKit deletion
+    if (isImageKitConfigured() && target.includes("ik.imagekit.io")) {
+      try {
+        const imagekit = getImageKitClient();
+        const results = await imagekit.listFiles({
+          name: filename,
+          path: "/products",
+        });
+
+        if (Array.isArray(results) && results.length > 0) {
+          const targetFile = results[0];
+          if (targetFile.type === "file") {
+            await imagekit.deleteFile(targetFile.fileId);
+            deleted = true;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to delete from ImageKit:", err);
+      }
     }
 
-    try {
-      await fs.unlink(filePath);
-    } catch {
-      return NextResponse.json({ error: "File not found or already deleted" }, { status: 404 });
+    // 2. If not deleted via cloud, attempt local filesystem deletion
+    if (!deleted) {
+      try {
+        const uploadDir = getUploadDir();
+        const filePath = path.join(uploadDir, filename);
+        if (filePath.startsWith(uploadDir)) {
+          await fs.unlink(filePath);
+          deleted = true;
+        }
+      } catch {
+        // Local file not found
+      }
+    }
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "File not found or already deleted" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ success: true, deleted: filename });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to delete file";
+    const message =
+      error instanceof Error ? error.message : "Failed to delete file";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

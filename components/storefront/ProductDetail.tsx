@@ -108,6 +108,8 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
             <ProductImage
               src={product.imageUrls[activeImg] ?? product.imageUrls[0]}
               alt={product.title}
+              variant="detail"
+              priority
               className={`h-full w-full object-cover object-top transition-all duration-300 ease-out active:scale-90 ${
                 isReduced ? "scale-[0.88] p-3 rounded-2xl" : "scale-100"
               }`}
@@ -220,7 +222,12 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                         : "border-zinc-200 opacity-60 hover:opacity-100 hover:border-zinc-400"
                     }`}
                   >
-                    <ProductImage src={src} alt="" className="h-full w-full object-cover object-top" />
+                    <ProductImage
+                      src={src}
+                      alt=""
+                      variant="thumb"
+                      className="h-full w-full object-cover object-top"
+                    />
                   </button>
                 ))}
               </div>
