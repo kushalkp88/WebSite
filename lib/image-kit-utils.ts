@@ -18,8 +18,8 @@ export function buildImageKitUrl(
     return url;
   }
 
-  // Strip any existing query params before applying transformations
-  const baseUrl = url.split("?")[0];
+  // Strip any existing hash fragments and query params before applying transformations
+  const baseUrl = url.split("#")[0].split("?")[0];
 
   switch (variant) {
     case "thumb":

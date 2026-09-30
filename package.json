@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:seed": "prisma db seed",
     "check:product": "tsx lib/product-check.ts",
+    "upload:imagekit": "tsx scripts/migrate-to-imagekit.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

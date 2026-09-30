@@ -4,7 +4,9 @@ import { serializeProduct } from "@/lib/product";
 import { ProductDetail } from "@/components/storefront/ProductDetail";
 import { StoreShell } from "@/components/storefront/StoreShell";
 
-export const dynamic = "force-dynamic";
+// Revalidate product page every 60 seconds (ISR) or on-demand via revalidatePath
+export const revalidate = 60;
+
 
 export default async function ProductPage({
   params,

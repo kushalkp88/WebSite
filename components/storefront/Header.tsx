@@ -16,7 +16,7 @@ import {
   Palette,
 } from "lucide-react";
 import { FormEvent, useState, useRef, useEffect, useSyncExternalStore } from "react";
-import { useShop } from "@/lib/cart-store";
+import { useShop, useShopActions, useCartCount, useWishCount } from "@/lib/cart-store";
 
 export type NavItem = {
   label: string;
@@ -77,11 +77,9 @@ const emptySubscribe = () => () => {};
 export function Header({ overlay = false }: { overlay?: boolean }) {
   const router = useRouter();
   const search = useShop((s) => s.search);
-  const setSearch = useShop((s) => s.setSearch);
-  const openBag = useShop((s) => s.openBag);
-  const openWishlist = useShop((s) => s.openWishlist);
-  const cartCount = useShop((s) => s.cart.reduce((n, i) => n + i.qty, 0));
-  const wishCount = useShop((s) => s.wishlist.length);
+  const { setSearch, openBag, openWishlist } = useShopActions();
+  const cartCount = useCartCount();
+  const wishCount = useWishCount();
 
   const [query, setQuery] = useState(search);
   const [menuOpen, setMenuOpen] = useState(false);

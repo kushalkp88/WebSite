@@ -26,7 +26,7 @@ export function ProductImage({
   // If the image is served from ImageKit, provide a 2x retina srcSet
   let srcSet: string | undefined;
   if (src && src.includes("ik.imagekit.io")) {
-    const cleanUrl = src.split("?")[0];
+    const cleanUrl = src.split("#")[0].split("?")[0];
     if (variant === "card") {
       const card1x = `${cleanUrl}?tr=w-400,h-533,fo-auto,q-80,f-auto`;
       const card2x = `${cleanUrl}?tr=w-800,h-1066,fo-auto,q-80,f-auto`;

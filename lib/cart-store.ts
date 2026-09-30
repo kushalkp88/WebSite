@@ -115,3 +115,71 @@ export const useShop = create<ShopState>()(
     },
   ),
 );
+
+// ---------------------------------------------------------------------------
+// High-Performance Granular Selectors & Stable Actions
+// ---------------------------------------------------------------------------
+
+/**
+ * Stable action dispatchers. Components calling actions through this hook
+ * will NEVER re-render when cart, wishlist, or modal states change.
+ */
+export const shopActions = {
+  addToCart: (item: CartItem) => useShop.getState().addToCart(item),
+  setQty: (productId: string, size: Size, qty: number) =>
+    useShop.getState().setQty(productId, size, qty),
+  removeFromCart: (productId: string, size: Size) =>
+    useShop.getState().removeFromCart(productId, size),
+  clearCart: () => useShop.getState().clearCart(),
+  toggleWishlist: (item: WishlistItem) =>
+    useShop.getState().toggleWishlist(item),
+  openBag: () => useShop.getState().openBag(),
+  closeBag: () => useShop.getState().closeBag(),
+  openWishlist: () => useShop.getState().openWishlist(),
+  closeWishlist: () => useShop.getState().closeWishlist(),
+  setSearch: (search: string) => useShop.getState().setSearch(search),
+};
+
+export const useShopActions = () => shopActions;
+
+// ---------------------------------------------------------------------------
+// Pure Selectors (O(1) testing & zero overhead)
+// ---------------------------------------------------------------------------
+export const selectCartCount = (s: ShopState): number =>
+  s.cart.reduce((sum, item) => sum + item.qty, 0);
+
+export const selectWishCount = (s: ShopState): number =>
+  s.wishlist.length;
+
+export const selectIsWished = (productId: string) => (s: ShopState): boolean =>
+  s.wishlist.some((w) => w.productId === productId);
+
+/**
+ * Returns a primitive boolean for a single product.
+ * Guarantees that product cards only re-render if *their specific* wishlist status changes.
+ */
+export const useIsWished = (productId: string): boolean =>
+  useShop(selectIsWished(productId));
+
+/**
+ * Returns total items in cart as a single number primitive.
+ */
+export const useCartCount = (): number =>
+  useShop(selectCartCount);
+
+/**
+ * Returns total items in wishlist as a single number primitive.
+ */
+export const useWishCount = (): number =>
+  useShop(selectWishCount);
+
+// ---------------------------------------------------------------------------
+// Cross-Tab State Synchronization (Native, zero dependencies)
+// ---------------------------------------------------------------------------
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "inkdrop-shop") {
+      useShop.persist?.rehydrate();
+    }
+  });
+}

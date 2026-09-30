@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_THEME, type ThemePayload } from "@/lib/theme";
 
@@ -31,6 +32,10 @@ export async function PATCH(req: Request) {
     },
     create: { id: "default", ...DEFAULT_THEME, ...body },
   });
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+
   return NextResponse.json({
     bgPrimary: row.bgPrimary,
     accentColor: row.accentColor,

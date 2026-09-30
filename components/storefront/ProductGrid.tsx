@@ -13,7 +13,7 @@ import {
   type ProductDTO,
   type Size,
 } from "@/lib/product";
-import { useShop } from "@/lib/cart-store";
+import { useShopActions, useIsWished } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
 
 export function ProductCard({ product }: { product: ProductDTO }) {
@@ -25,11 +25,8 @@ export function ProductCard({ product }: { product: ProductDTO }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [isReduced, setIsReduced] = useState(false);
 
-  const addToCart = useShop((s) => s.addToCart);
-  const toggleWishlist = useShop((s) => s.toggleWishlist);
-  const wished = useShop((s) =>
-    s.wishlist.some((w) => w.productId === product.id),
-  );
+  const { addToCart, toggleWishlist } = useShopActions();
+  const wished = useIsWished(product.id);
 
   const images = useMemo(() => {
     return product.imageUrls && product.imageUrls.length > 0

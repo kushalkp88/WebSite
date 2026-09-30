@@ -22,7 +22,7 @@ export const metadata = {
   description: "Oversized graphic tees. Loud prints. Unhinged streetwear energy.",
 };
 
-export const dynamic = "force-dynamic";
+import { unstable_cache } from "next/cache";
 
 async function loadTheme(): Promise<ThemePayload> {
   try {
@@ -41,18 +41,28 @@ async function loadTheme(): Promise<ThemePayload> {
   }
 }
 
+const getCachedTheme = unstable_cache(
+  async () => loadTheme(),
+  ["site-theme-payload"],
+  { tags: ["theme"], revalidate: 3600 },
+);
+
 export default async function RootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const theme = await loadTheme();
+  const theme = await getCachedTheme();
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${instrument.variable} h-full antialiased`}
       style={themeToCss(theme) as CSSProperties}
     >
+      <head>
+        <link rel="preconnect" href="https://ik.imagekit.io" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://ik.imagekit.io" />
+      </head>
       <body className="min-h-full">
         <ThemeProvider initial={theme}>{children}</ThemeProvider>
       </body>

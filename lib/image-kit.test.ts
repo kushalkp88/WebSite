@@ -33,8 +33,8 @@ assert.equal(
   "https://ik.imagekit.io/inkdrop/products/tshirt-navy.jpg"
 );
 
-// 4. Strips prior transformation queries before applying new ones
-const alreadyTransformed = "https://ik.imagekit.io/inkdrop/products/tshirt-navy.jpg?tr=w-100,h-100";
+// 4. Strips prior transformation queries and hash fragments before applying new ones
+const alreadyTransformed = "https://ik.imagekit.io/inkdrop/products/tshirt-navy.jpg?tr=w-100,h-100#color=Navy";
 assert.equal(
   buildImageKitUrl(alreadyTransformed, "card"),
   "https://ik.imagekit.io/inkdrop/products/tshirt-navy.jpg?tr=w-400,h-533,fo-auto,q-80,f-auto"

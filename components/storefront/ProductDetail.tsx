@@ -24,7 +24,7 @@ import {
   type ProductDTO,
   type Size,
 } from "@/lib/product";
-import { useShop } from "@/lib/cart-store";
+import { useShopActions, useIsWished } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
 
 export function ProductDetail({ product }: { product: ProductDTO }) {
@@ -64,12 +64,8 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
     }
   }, [activeImg]);
 
-  const addToCart = useShop((s) => s.addToCart);
-  const openBag = useShop((s) => s.openBag);
-  const toggleWishlist = useShop((s) => s.toggleWishlist);
-  const wished = useShop((s) =>
-    s.wishlist.some((w) => w.productId === product.id),
-  );
+  const { addToCart, openBag, toggleWishlist } = useShopActions();
+  const wished = useIsWished(product.id);
 
   function handleAdd() {
     if (!size || oos) return;

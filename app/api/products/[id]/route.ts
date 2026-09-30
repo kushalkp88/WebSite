@@ -70,6 +70,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     revalidatePath("/");
     revalidatePath("/catalog");
     revalidatePath("/admin");
+    if (row.slug) revalidatePath(`/product/${row.slug}`);
     return NextResponse.json(serializeProduct(row));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to update product";
@@ -80,10 +81,15 @@ export async function PATCH(req: Request, { params }: Ctx) {
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
     await prisma.product.delete({ where: { id } });
     revalidatePath("/");
     revalidatePath("/catalog");
     revalidatePath("/admin");
+    if (existing?.slug) revalidatePath(`/product/${existing.slug}`);
     return NextResponse.json({ success: true, ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to delete product";
