@@ -5,6 +5,11 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
+const HERO_MEN_IMAGE =
+  "https://ik.imagekit.io/unhinged/hero/men-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
+const HERO_WOMEN_IMAGE =
+  "https://ik.imagekit.io/unhinged/hero/women-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
+
 export function GenderGatewayHero() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -84,10 +89,11 @@ export function GenderGatewayHero() {
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Male Model Image */}
                 <Image
-                  src="/hero/men-model.jpg"
+                  src={HERO_MEN_IMAGE}
                   alt="Men's Streetwear Collection"
                   fill
                   priority
+                  unoptimized
                   sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 />
@@ -134,10 +140,11 @@ export function GenderGatewayHero() {
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Female Model Image */}
                 <Image
-                  src="/hero/women-model.jpg"
+                  src={HERO_WOMEN_IMAGE}
                   alt="Women's Streetwear Collection"
                   fill
                   priority
+                  unoptimized
                   sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                 />
