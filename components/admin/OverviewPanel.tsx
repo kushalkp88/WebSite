@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ProductDTO } from "@/lib/product";
 import { formatInr, isOutOfStock, totalStock } from "@/lib/product";
+import { CdnUsageCard } from "./CdnUsageCard";
 
 interface OverviewPanelProps {
   products: ProductDTO[];
@@ -215,6 +216,9 @@ export function OverviewPanel({
           </div>
         </div>
       </div>
+
+      {/* CDN & Media Usage Card */}
+      <CdnUsageCard />
 
       {/* Two Column Layout: Actionable Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

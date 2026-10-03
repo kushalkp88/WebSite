@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
-import { getImageKitClient, isImageKitConfigured } from "@/lib/imagekit";
+import {
+  deleteMediaAsset,
+  getImageKitClient,
+  isImageKitConfigured,
+} from "@/lib/imagekit";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import sharp from "sharp";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -115,13 +120,32 @@ export async function POST(request: NextRequest) {
 
       const filename = sanitizeFilename(file.name);
       const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      const rawBuffer = Buffer.from(arrayBuffer);
+
+      let finalBuffer = rawBuffer;
+      let finalName = filename;
+      let finalMime = file.type;
+
+      // ponytail: compress raster images to max 2048px WebP q=84; preserve animated gifs
+      if (file.type !== "image/gif") {
+        try {
+          finalBuffer = await sharp(rawBuffer)
+            .rotate()
+            .resize(2048, 2048, { fit: "inside", withoutEnlargement: true })
+            .webp({ quality: 84, effort: 5, smartSubsample: true })
+            .toBuffer();
+          finalName = filename.replace(/\.[^/.]+$/, "") + ".webp";
+          finalMime = "image/webp";
+        } catch (compressionErr) {
+          console.warn("Sharp compression failed, falling back to original:", compressionErr);
+        }
+      }
 
       if (imagekit) {
         // Upload directly to ImageKit cloud under /products
         const uploadResult = await imagekit.upload({
-          file: buffer,
-          fileName: filename,
+          file: finalBuffer,
+          fileName: finalName,
           folder: "/products",
           useUniqueFileName: true,
         });
@@ -130,21 +154,21 @@ export async function POST(request: NextRequest) {
           url: uploadResult.url,
           name: uploadResult.name,
           size: uploadResult.size,
-          type: file.type,
+          type: finalMime,
         });
       } else {
         // Fallback for local development if keys are not yet added
         const uploadDir = getUploadDir();
         await fs.mkdir(uploadDir, { recursive: true });
-        const filePath = path.join(uploadDir, filename);
-        await fs.writeFile(filePath, buffer);
+        const filePath = path.join(uploadDir, finalName);
+        await fs.writeFile(filePath, finalBuffer);
 
-        const url = `/uploads/${filename}`;
+        const url = `/uploads/${finalName}`;
         savedFiles.push({
           url,
-          name: file.name,
-          size: file.size,
-          type: file.type,
+          name: finalName,
+          size: finalBuffer.byteLength,
+          type: finalMime,
         });
       }
     }
@@ -174,7 +198,7 @@ export async function GET() {
       try {
         const urls = JSON.parse(p.imageUrls || "[]") as string[];
         for (const u of urls) {
-          const cleanUrl = u.split("?")[0];
+          const cleanUrl = u.split("#")[0].split("?")[0];
           if (!usageMap.has(cleanUrl)) usageMap.set(cleanUrl, []);
           usageMap.get(cleanUrl)!.push({ title: p.title, slug: p.slug });
         }
@@ -308,43 +332,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    let deleted = false;
-    const filename = path.basename(target.split("?")[0]);
-
-    // 1. If target is an ImageKit URL or ImageKit is configured, attempt ImageKit deletion
-    if (isImageKitConfigured() && target.includes("ik.imagekit.io")) {
-      try {
-        const imagekit = getImageKitClient();
-        const results = await imagekit.listFiles({
-          name: filename,
-          path: "/products",
-        });
-
-        if (Array.isArray(results) && results.length > 0) {
-          const targetFile = results[0];
-          if (targetFile.type === "file") {
-            await imagekit.deleteFile(targetFile.fileId);
-            deleted = true;
-          }
-        }
-      } catch (err) {
-        console.error("Failed to delete from ImageKit:", err);
-      }
-    }
-
-    // 2. If not deleted via cloud, attempt local filesystem deletion
-    if (!deleted) {
-      try {
-        const uploadDir = getUploadDir();
-        const filePath = path.join(uploadDir, filename);
-        if (filePath.startsWith(uploadDir)) {
-          await fs.unlink(filePath);
-          deleted = true;
-        }
-      } catch {
-        // Local file not found
-      }
-    }
+    const filename = path.basename(target.split("#")[0].split("?")[0]);
+    const deleted = await deleteMediaAsset(target);
 
     if (!deleted) {
       return NextResponse.json(

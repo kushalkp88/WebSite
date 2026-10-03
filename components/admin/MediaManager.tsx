@@ -76,16 +76,60 @@ export function MediaManager({ onShowToast, onCreateProductWithImage }: MediaMan
     };
   }, [onShowToast]);
 
+// ponytail: native canvas precompression avoids uploading heavy 8MB raw photos over uplink
+async function precompressBrowserImage(file: File, maxDim = 2048, quality = 0.85): Promise<File> {
+  if (file.size <= 500 * 1024 || file.type === "image/gif" || file.type === "image/svg+xml") {
+    return file;
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(file);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) return resolve(file);
+          const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+          resolve(new File([blob], cleanName, { type: "image/webp", lastModified: Date.now() }));
+        },
+        "image/webp",
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
   async function handleUploadFiles(files: FileList | File[]) {
     if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]);
-    }
-
     setUploading(true);
     try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        const readyFile = await precompressBrowserImage(files[i]);
+        formData.append("files", readyFile);
+      }
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,

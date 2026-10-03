@@ -9,7 +9,11 @@
     "lint": "eslint",
     "db:seed": "prisma db seed",
     "check:product": "tsx lib/product-check.ts",
+    "check:media": "tsx scripts/test-pipeline.ts",
+    "migrate:media": "tsx scripts/media-migration-pipeline.ts",
+    "audit:storage": "tsx scripts/audit-imagekit-storage.ts",
     "upload:imagekit": "tsx scripts/migrate-to-imagekit.ts",
+    "purge:imagekit": "tsx scripts/purge-unused-imagekit.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

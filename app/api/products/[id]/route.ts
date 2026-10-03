@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { serializeProduct } from "@/lib/product";
+import { deleteMediaAsset, isMediaInUseElsewhere } from "@/lib/imagekit";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,24 @@ export async function PATCH(req: Request, { params }: Ctx) {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 });
+    }
+
+    let removedUrls: string[] = [];
+    if (body.imageUrls != null) {
+      const current = await prisma.product.findUnique({
+        where: { id },
+        select: { imageUrls: true },
+      });
+      if (current?.imageUrls) {
+        try {
+          const oldUrls: string[] = JSON.parse(current.imageUrls || "[]");
+          const newUrls: string[] = Array.isArray(body.imageUrls) ? body.imageUrls : [];
+          const newCleanSet = new Set(newUrls.map((u) => u.split("#")[0].split("?")[0]));
+          removedUrls = oldUrls.filter((u) => !newCleanSet.has(u.split("#")[0].split("?")[0]));
+        } catch {
+          // ignore json parse error
+        }
+      }
     }
 
     const data: Record<string, unknown> = {};
@@ -67,6 +86,21 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (body.reviewCount != null) data.reviewCount = Number(body.reviewCount);
 
     const row = await prisma.product.update({ where: { id }, data });
+
+    // Clean up removed images that are not referenced by any other product
+    if (removedUrls.length > 0) {
+      for (const url of removedUrls) {
+        try {
+          const inUse = await isMediaInUseElsewhere(url, id);
+          if (!inUse) {
+            await deleteMediaAsset(url);
+          }
+        } catch (cleanupErr) {
+          console.error(`Failed to clean up removed image ${url}:`, cleanupErr);
+        }
+      }
+    }
+
     revalidatePath("/");
     revalidatePath("/catalog");
     revalidatePath("/admin");
@@ -83,9 +117,25 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const { id } = await params;
     const existing = await prisma.product.findUnique({
       where: { id },
-      select: { slug: true },
+      select: { slug: true, imageUrls: true },
     });
     await prisma.product.delete({ where: { id } });
+
+    // Clean up product images if no other product shares them
+    if (existing?.imageUrls) {
+      try {
+        const urls: string[] = JSON.parse(existing.imageUrls || "[]");
+        for (const url of urls) {
+          const inUse = await isMediaInUseElsewhere(url, id);
+          if (!inUse) {
+            await deleteMediaAsset(url);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to clean up product images on delete:", err);
+      }
+    }
+
     revalidatePath("/");
     revalidatePath("/catalog");
     revalidatePath("/admin");

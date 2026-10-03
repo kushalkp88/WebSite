@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildImageKitUrl } from "./image-kit-utils";
-import { isImageKitConfigured } from "./imagekit";
+import { isImageKitConfigured, deleteMediaAsset, isMediaInUseElsewhere } from "./imagekit";
 
 // 1. Fallback handling for empty or null URLs
 assert.equal(buildImageKitUrl(null), "/products/rack.jpg");
@@ -43,4 +43,18 @@ assert.equal(
 // 5. Configuration check
 assert.equal(typeof isImageKitConfigured(), "boolean");
 
-console.log("image-kit check ok");
+// 6. Media deletion helpers check
+assert.equal(typeof deleteMediaAsset, "function");
+assert.equal(typeof isMediaInUseElsewhere, "function");
+
+async function main() {
+  const emptyDelete = await deleteMediaAsset("");
+  assert.equal(emptyDelete, false);
+  console.log("image-kit check ok");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+

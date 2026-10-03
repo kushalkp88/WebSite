@@ -48,3 +48,8 @@ next-env.d.ts
 /public/uploads/*
 !/public/uploads/.gitkeep
 
+# imagekit migration & purge artifacts
+migration-map.json
+purge-manifest-dryrun.json
+purge-history.json
+
