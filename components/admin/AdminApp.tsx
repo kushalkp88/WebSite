@@ -47,6 +47,12 @@ export function AdminApp({
   const [targetCreateProduct, setTargetCreateProduct] = useState(false);
   const [targetCreateImageUrl, setTargetCreateImageUrl] = useState<string | null>(null);
 
+  const [prevInitial, setPrevInitial] = useState(initialProducts);
+  if (initialProducts !== prevInitial) {
+    setPrevInitial(initialProducts);
+    setProducts(initialProducts);
+  }
+
   const refreshProducts = async () => {
     try {
       const res = await fetch("/api/products", { cache: "no-store" });
@@ -60,14 +66,23 @@ export function AdminApp({
   };
 
   useEffect(() => {
-    refreshProducts();
+    let ignore = false;
+    const fetchLatest = async () => {
+      try {
+        const res = await fetch("/api/products", { cache: "no-store" });
+        if (res.ok && !ignore) {
+          const data: ProductDTO[] = await res.json();
+          setProducts(data);
+        }
+      } catch (err) {
+        console.error("Failed to refresh products:", err);
+      }
+    };
+    fetchLatest();
+    return () => {
+      ignore = true;
+    };
   }, []);
-
-  useEffect(() => {
-    if (initialProducts) {
-      setProducts(initialProducts);
-    }
-  }, [initialProducts]);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     const id = Math.random().toString(36).substring(2, 9);

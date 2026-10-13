@@ -119,11 +119,13 @@ export function ProductManager({
   const [prevEditingTarget, setPrevEditingTarget] = useState(editingTarget);
   const [prevCreatingTarget, setPrevCreatingTarget] = useState(creatingTarget);
 
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
     if (initial) {
       setProducts(initial);
     }
-  }, [initial]);
+  }
 
   if (editingTarget !== prevEditingTarget) {
     setPrevEditingTarget(editingTarget);
@@ -157,8 +159,24 @@ export function ProductManager({
   }
 
   useEffect(() => {
-    refreshProducts();
-  }, []);
+    let ignore = false;
+    const fetchFresh = async () => {
+      try {
+        const res = await fetch("/api/products", { cache: "no-store" });
+        if (res.ok && !ignore) {
+          const data = await res.json();
+          setProducts(data);
+          onProductsUpdated?.();
+        }
+      } catch {
+        // silent fail on mount
+      }
+    };
+    fetchFresh();
+    return () => {
+      ignore = true;
+    };
+  }, [onProductsUpdated]);
 
   async function handleToggleVisibility(product: ProductDTO) {
     const nextState = !product.isVisible;

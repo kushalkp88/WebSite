@@ -185,16 +185,6 @@ export function BrandFeatures({ featuredProducts = [] }: { featuredProducts?: Pr
             </div>
           </div>
 
-          {/* CTA Link to Dedicated Catalog */}
-          <div className="pt-3">
-            <Link
-              href="/catalog"
-              className="inline-flex items-center gap-2.5 rounded-full px-8 py-3.5 text-xs sm:text-sm font-black uppercase tracking-[0.18em] text-zinc-950 bg-white hover:bg-emerald-400 hover:text-black transition-all duration-300 shadow-xl hover:scale-105"
-            >
-              <span>Explore All Drops</span>
-              <ArrowRight size={15} />
-            </Link>
-          </div>
         </div>
       </div>
 

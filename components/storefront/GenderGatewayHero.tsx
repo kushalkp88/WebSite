@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +15,8 @@ export function GenderGatewayHero() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentGender = searchParams.get("gender")?.toLowerCase();
+  const [menSrc, setMenSrc] = useState(HERO_MEN_IMAGE);
+  const [womenSrc, setWomenSrc] = useState(HERO_WOMEN_IMAGE);
 
   function handleSelect(gender: "men" | "women") {
     const sp = new URLSearchParams();
@@ -89,13 +92,14 @@ export function GenderGatewayHero() {
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Male Model Image */}
                 <Image
-                  src={HERO_MEN_IMAGE}
+                  src={menSrc}
                   alt="Men's Streetwear Collection"
                   fill
                   priority
                   unoptimized
                   sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+                  onError={() => setMenSrc("/hero/men-model.jpg")}
                 />
 
                 {/* Vignette Overlay for Photographic Depth */}
@@ -140,13 +144,14 @@ export function GenderGatewayHero() {
               <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
                 {/* Female Model Image */}
                 <Image
-                  src={HERO_WOMEN_IMAGE}
+                  src={womenSrc}
                   alt="Women's Streetwear Collection"
                   fill
                   priority
                   unoptimized
                   sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+                  onError={() => setWomenSrc("/hero/women-model.jpg")}
                 />
 
                 {/* Vignette Overlay for Photographic Depth */}
