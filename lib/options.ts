@@ -132,10 +132,10 @@ export const DEFAULT_COLOR_OPTIONS: ColorOption[] = [
 
 export const DEFAULT_FIT_OPTIONS: FitOption[] = [
   { name: "Oversized Fit", description: "Relaxed drop-shoulder silhouette" },
+  { name: "Regular Fit", description: "Standard everyday streetwear fit" },
   { name: "Regular/Classic Fit", description: "Standard everyday fit" },
   { name: "Boxy Fit", description: "Wide chest with structured cut" },
   { name: "Relaxed Fit", description: "Casual, loose-fitting silhouette" },
-  { name: "Boyfriend Fit", description: "Slightly oversized casual look" },
   { name: "Crop Top", description: "Short length modern street cut" },
   { name: "Sweatshirt", description: "Cozy fleece crewneck" },
   { name: "Hoodie", description: "Classic pullover hooded sweatshirt" },

@@ -20,7 +20,7 @@ const FITS = [
   { id: "regular", name: "Classic Regular Fit (180 GSM)", basePrice: 699 },
   { id: "hoodie", name: "Fleece Streetwear Hoodie (380 GSM)", basePrice: 1499 },
   { id: "sweatshirt", name: "Boxy Drop-Shoulder Sweatshirt", basePrice: 1299 },
-  { id: "croptop", name: "Women Boyfriend Crop Top", basePrice: 649 },
+  { id: "croptop", name: "Women Regular Crop Top", basePrice: 649 },
 ];
 
 const PRESET_GRAPHICS = [

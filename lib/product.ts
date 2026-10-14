@@ -9,9 +9,9 @@ export type ProductSection = (typeof PRODUCT_SECTIONS)[number];
 export const PRODUCT_CATEGORIES = [
   "Oversized Fit",
   "Regular/Classic Fit",
+  "Regular Fit",
   "Boxy Fit",
   "Relaxed Fit",
-  "Boyfriend Fit",
   "Crop Top",
   "Sweatshirt",
   "Hoodie",

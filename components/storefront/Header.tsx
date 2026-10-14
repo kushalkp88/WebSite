@@ -54,7 +54,7 @@ const WOMEN_CATEGORIES: CategoryGroup[] = [
     title: "Plain Tee",
     items: [
       { label: "Crop Top", href: "/catalog?gender=women&type=plain&category=Crop%20Top" },
-      { label: "Boyfriend Fit", href: "/catalog?gender=women&type=plain&category=Boyfriend%20Fit" },
+      { label: "Regular", href: "/catalog?gender=women&type=plain&category=Regular" },
       { label: "Oversized", href: "/catalog?gender=women&type=plain&category=Oversized" },
       { label: "Sweatshirts", href: "/catalog?gender=women&type=plain&category=Sweatshirts" },
       { label: "Hoodies", href: "/catalog?gender=women&type=plain&category=Hoodies" },
@@ -64,7 +64,7 @@ const WOMEN_CATEGORIES: CategoryGroup[] = [
     title: "Printed Tee",
     items: [
       { label: "Crop Top", href: "/catalog?gender=women&type=printed&category=Crop%20Top" },
-      { label: "Boyfriend Fit", href: "/catalog?gender=women&type=printed&category=Boyfriend%20Fit" },
+      { label: "Regular", href: "/catalog?gender=women&type=printed&category=Regular" },
       { label: "Oversized", href: "/catalog?gender=women&type=printed&category=Oversized" },
       { label: "Sweatshirts", href: "/catalog?gender=women&type=printed&category=Sweatshirts" },
       { label: "Hoodies", href: "/catalog?gender=women&type=printed&category=Hoodies" },

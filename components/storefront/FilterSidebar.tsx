@@ -25,9 +25,8 @@ export const EMPTY_FILTERS: Filters = {
 
 export const FIT_OPTIONS = [
   "Oversized",
-  "Classic Fit",
+  "Regular Fit",
   "Crop Top",
-  "Boyfriend Fit",
   "Sweatshirts",
   "Hoodies",
 ] as const;

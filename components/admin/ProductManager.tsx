@@ -1016,7 +1016,7 @@ function ProductModal({
 
     return {
       women: {
-        category: womenSource?.category ?? "Boyfriend Fit",
+        category: womenSource?.category ?? "Regular Fit",
         color: womenSource?.color ?? (product?.color ?? ""),
         price: womenSource?.price ?? (product?.price ?? 1499),
         discountPrice: womenSource ? womenSource.discountPrice : (product?.discountPrice ?? 599),
@@ -1104,7 +1104,7 @@ function ProductModal({
       url: "", 
       department: initialDept, 
       color: STANDARD_COLORS[0], 
-      fit: initialDept === "women" ? "Boyfriend Fit" : "Oversized Fit" 
+      fit: initialDept === "women" ? "Regular Fit" : "Oversized Fit" 
     }];
   });
 
@@ -1388,7 +1388,7 @@ function ProductModal({
         url: "",
         department: activeDept,
         color: images.find((img) => img.department === activeDept && img.color)?.color || STANDARD_COLORS[0],
-        fit: images.find((img) => img.department === activeDept && img.fit)?.fit || (activeDept === "women" ? "Boyfriend Fit" : "Oversized Fit"),
+        fit: images.find((img) => img.department === activeDept && img.fit)?.fit || (activeDept === "women" ? "Regular Fit" : "Oversized Fit"),
       },
     ];
     setImages(next);
@@ -1473,7 +1473,7 @@ function ProductModal({
     const getDeptFit = (dept: DeptType) => {
       const deptSlots = validImages.filter((img) => img.department === dept);
       const firstFit = deptSlots.find((s) => s.fit)?.fit;
-      return firstFit || deptConfigs[dept].category || (dept === "women" ? "Boyfriend Fit" : "Oversized Fit");
+      return firstFit || deptConfigs[dept].category || (dept === "women" ? "Regular Fit" : "Oversized Fit");
     };
 
     if (dropMode === "dual_drop") {

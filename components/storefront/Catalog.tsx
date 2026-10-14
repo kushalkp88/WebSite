@@ -146,18 +146,24 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       if (filters.fits.length) {
         const matchFit = filters.fits.some((f) => {
           if (
-            f === "Classic Fit" ||
+            f === "Regular Fit" ||
             f === "Regular" ||
+            f === "Classic Fit" ||
             f === "Regular/Classic Fit" ||
-            f === "Regular or Classic Fit"
+            f === "Regular or Classic Fit" ||
+            f === "Boyfriend Fit" ||
+            f === "Boyfriend"
           ) {
             return (
-              p.category === "Classic Fit" ||
+              p.category === "Regular Fit" ||
               p.category === "Regular" ||
+              p.category === "Classic Fit" ||
               p.category === "Regular/Classic Fit" ||
               p.category === "Regular or Classic Fit" ||
+              p.category === "Boyfriend Fit" ||
+              p.title.toLowerCase().includes("regular") ||
               p.title.toLowerCase().includes("classic") ||
-              p.title.toLowerCase().includes("regular")
+              p.title.toLowerCase().includes("boyfriend")
             );
           }
           if (f === "Oversized" || f === "Oversized Fit") {
@@ -243,16 +249,18 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
       if (genderPrefix) return `${genderPrefix} SPECIAL OFFERS & SALE`;
       return "SPECIAL OFFERS & SALE";
     }
-    if (genderPrefix && type && cat) {
-      return `${genderPrefix} ${type.toUpperCase()} • ${cat.toUpperCase()}`;
+    const displayCat = cat?.toLowerCase().includes("boyfriend") ? "REGULAR FIT" : cat?.toUpperCase();
+
+    if (genderPrefix && type && displayCat) {
+      return `${genderPrefix} ${type.toUpperCase()} • ${displayCat}`;
     }
-    if (genderPrefix && cat) {
-      return `${genderPrefix} ${cat.toUpperCase()}`;
+    if (genderPrefix && displayCat) {
+      return `${genderPrefix} ${displayCat}`;
     }
     if (genderPrefix) {
       return `${genderPrefix} COLLECTION`;
     }
-    if (cat) return cat.toUpperCase();
+    if (displayCat) return displayCat;
     if (badge) return badge.toUpperCase();
     return "ALL DROPS";
   }, [params]);
