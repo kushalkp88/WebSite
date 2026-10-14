@@ -4,23 +4,30 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Flame } from "lucide-react";
 
 const HERO_MEN_IMAGE =
   "https://ik.imagekit.io/unhinged/hero/men-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
 const HERO_WOMEN_IMAGE =
   "https://ik.imagekit.io/unhinged/hero/women-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
+const HERO_SALE_IMAGE = "/hero/sale-model.jpg";
 
 export function GenderGatewayHero() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentGender = searchParams.get("gender")?.toLowerCase();
+  const isSaleActive = searchParams.get("sale") === "true";
   const [menSrc, setMenSrc] = useState(HERO_MEN_IMAGE);
   const [womenSrc, setWomenSrc] = useState(HERO_WOMEN_IMAGE);
+  const [saleSrc, setSaleSrc] = useState(HERO_SALE_IMAGE);
 
-  function handleSelect(gender: "men" | "women") {
+  function handleSelect(target: "men" | "women" | "sale") {
+    if (target === "sale") {
+      router.push("/catalog?sale=true");
+      return;
+    }
     const sp = new URLSearchParams();
-    sp.set("gender", gender);
+    sp.set("gender", target);
     router.push(`/catalog?${sp.toString()}`);
   }
 
@@ -58,10 +65,11 @@ export function GenderGatewayHero() {
       </div>
 
       {/* Atmospheric Ambient Glow behind circles */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-72 sm:w-96 h-72 sm:h-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 translate-x-1/2 w-72 sm:w-96 h-72 sm:h-96 rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-[15%] -translate-y-1/2 -translate-x-1/2 w-60 sm:w-80 h-60 sm:h-80 rounded-full bg-emerald-500/10 blur-[90px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 w-60 sm:w-80 h-60 sm:h-80 rounded-full bg-cyan-500/10 blur-[90px] pointer-events-none" />
+      <div className="absolute top-1/2 right-[15%] -translate-y-1/2 translate-x-1/2 w-60 sm:w-80 h-60 sm:h-80 rounded-full bg-rose-500/15 blur-[90px] pointer-events-none" />
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-5xl px-3 sm:px-6 lg:px-8">
         {/* Centered Brand Tagline */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="font-black text-2xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight uppercase leading-[1.1] text-white">
@@ -73,19 +81,19 @@ export function GenderGatewayHero() {
           </h1>
         </div>
 
-        {/* Two-Column Circular Portals */}
-        <div className="grid grid-cols-2 gap-6 sm:gap-12 md:gap-16 max-w-2xl sm:max-w-3xl mx-auto items-center">
+        {/* Three-Column Circular Portals */}
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-6 md:gap-10 max-w-4xl lg:max-w-5xl mx-auto items-center justify-items-center">
           {/* ================= MEN'S CIRCULAR PORTAL ================= */}
           <div
             onClick={() => handleSelect("men")}
-            className="group flex flex-col items-center cursor-pointer"
+            className="group flex flex-col items-center cursor-pointer w-full"
           >
             {/* Circular Frame Wrapper */}
             <div
-              className={`relative w-36 h-36 sm:w-60 sm:h-60 md:w-72 md:h-72 rounded-full p-1.5 sm:p-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.8)] ${
-                currentGender === "men"
+              className={`relative w-24 h-24 min-[380px]:w-28 min-[380px]:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full p-1 sm:p-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.8)] ${
+                currentGender === "men" && !isSaleActive
                   ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 ring-4 ring-emerald-400/30 scale-105"
-                  : "bg-gradient-to-b from-white/25 via-zinc-800 to-white/10 group-hover:from-emerald-400 group-hover:via-emerald-500/50 group-hover:to-cyan-400 group-hover:scale-105 group-hover:shadow-[0_0_40px_rgba(16,185,129,0.35)]"
+                  : "bg-gradient-to-b from-white/25 via-zinc-800 to-white/10 group-hover:from-emerald-400 group-hover:via-emerald-500/50 group-hover:to-cyan-400 group-hover:scale-105 group-hover:shadow-[0_0_35px_rgba(16,185,129,0.35)]"
               }`}
             >
               {/* Inner Circle Clipping Container */}
@@ -97,7 +105,7 @@ export function GenderGatewayHero() {
                   fill
                   priority
                   unoptimized
-                  sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
+                  sizes="(max-width: 640px) 112px, (max-width: 768px) 176px, 256px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                   onError={() => setMenSrc("/hero/men-model.jpg")}
                 />
@@ -108,21 +116,21 @@ export function GenderGatewayHero() {
             </div>
 
             {/* Streetwear Pill Button */}
-            <div className="mt-4 sm:mt-6 w-full max-w-[160px] sm:max-w-[200px]">
+            <div className="mt-3 sm:mt-5 md:mt-6 w-full max-w-[105px] min-[380px]:max-w-[125px] sm:max-w-[170px] md:max-w-[190px]">
               <Link
                 href="/catalog?gender=men"
                 onClick={(e) => {
                   e.preventDefault();
                   handleSelect("men");
                 }}
-                className={`relative flex items-center justify-center gap-2 w-full rounded-full py-2.5 sm:py-3.5 text-xs sm:text-sm font-black tracking-[0.18em] uppercase transition-all duration-300 shadow-xl ${
-                  currentGender === "men"
+                className={`relative flex items-center justify-center gap-1 sm:gap-2 w-full rounded-full py-2 sm:py-3 md:py-3.5 text-[10px] min-[380px]:text-xs sm:text-sm font-black tracking-[0.14em] sm:tracking-[0.18em] uppercase transition-all duration-300 shadow-xl ${
+                  currentGender === "men" && !isSaleActive
                     ? "bg-emerald-400 text-black shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-105"
                     : "bg-white text-zinc-950 hover:bg-emerald-400 hover:text-black group-hover:bg-emerald-400 group-hover:text-black group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]"
                 }`}
               >
                 <span>MEN</span>
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={13} className="transition-transform group-hover:translate-x-1 hidden min-[380px]:inline-block" />
               </Link>
             </div>
           </div>
@@ -130,14 +138,14 @@ export function GenderGatewayHero() {
           {/* ================= WOMEN'S CIRCULAR PORTAL ================= */}
           <div
             onClick={() => handleSelect("women")}
-            className="group flex flex-col items-center cursor-pointer"
+            className="group flex flex-col items-center cursor-pointer w-full"
           >
             {/* Circular Frame Wrapper */}
             <div
-              className={`relative w-36 h-36 sm:w-60 sm:h-60 md:w-72 md:h-72 rounded-full p-1.5 sm:p-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.8)] ${
-                currentGender === "women"
-                  ? "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 ring-4 ring-emerald-400/30 scale-105"
-                  : "bg-gradient-to-b from-white/25 via-zinc-800 to-white/10 group-hover:from-emerald-400 group-hover:via-emerald-500/50 group-hover:to-cyan-400 group-hover:scale-105 group-hover:shadow-[0_0_40px_rgba(16,185,129,0.35)]"
+              className={`relative w-24 h-24 min-[380px]:w-28 min-[380px]:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full p-1 sm:p-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.8)] ${
+                currentGender === "women" && !isSaleActive
+                  ? "bg-gradient-to-b from-teal-400 via-cyan-500 to-sky-600 ring-4 ring-cyan-400/30 scale-105"
+                  : "bg-gradient-to-b from-white/25 via-zinc-800 to-white/10 group-hover:from-teal-400 group-hover:via-cyan-500/50 group-hover:to-sky-400 group-hover:scale-105 group-hover:shadow-[0_0_35px_rgba(6,182,212,0.35)]"
               }`}
             >
               {/* Inner Circle Clipping Container */}
@@ -149,7 +157,7 @@ export function GenderGatewayHero() {
                   fill
                   priority
                   unoptimized
-                  sizes="(max-width: 640px) 144px, (max-width: 768px) 240px, 288px"
+                  sizes="(max-width: 640px) 112px, (max-width: 768px) 176px, 256px"
                   className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                   onError={() => setWomenSrc("/hero/women-model.jpg")}
                 />
@@ -160,21 +168,79 @@ export function GenderGatewayHero() {
             </div>
 
             {/* Streetwear Pill Button */}
-            <div className="mt-4 sm:mt-6 w-full max-w-[160px] sm:max-w-[200px]">
+            <div className="mt-3 sm:mt-5 md:mt-6 w-full max-w-[105px] min-[380px]:max-w-[125px] sm:max-w-[170px] md:max-w-[190px]">
               <Link
                 href="/catalog?gender=women"
                 onClick={(e) => {
                   e.preventDefault();
                   handleSelect("women");
                 }}
-                className={`relative flex items-center justify-center gap-2 w-full rounded-full py-2.5 sm:py-3.5 text-xs sm:text-sm font-black tracking-[0.18em] uppercase transition-all duration-300 shadow-xl ${
-                  currentGender === "women"
-                    ? "bg-emerald-400 text-black shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-105"
-                    : "bg-white text-zinc-950 hover:bg-emerald-400 hover:text-black group-hover:bg-emerald-400 group-hover:text-black group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]"
+                className={`relative flex items-center justify-center gap-1 sm:gap-2 w-full rounded-full py-2 sm:py-3 md:py-3.5 text-[10px] min-[380px]:text-xs sm:text-sm font-black tracking-[0.14em] sm:tracking-[0.18em] uppercase transition-all duration-300 shadow-xl ${
+                  currentGender === "women" && !isSaleActive
+                    ? "bg-cyan-400 text-black shadow-[0_0_25px_rgba(6,182,212,0.5)] scale-105"
+                    : "bg-white text-zinc-950 hover:bg-cyan-400 hover:text-black group-hover:bg-cyan-400 group-hover:text-black group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(6,182,212,0.4)]"
                 }`}
               >
                 <span>WOMEN</span>
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={13} className="transition-transform group-hover:translate-x-1 hidden min-[380px]:inline-block" />
+              </Link>
+            </div>
+          </div>
+
+          {/* ================= SALE & OFFERS CIRCULAR PORTAL ================= */}
+          <div
+            onClick={() => handleSelect("sale")}
+            className="group flex flex-col items-center cursor-pointer w-full relative"
+          >
+            {/* Circular Frame Wrapper with Sale Badge */}
+            <div
+              className={`relative w-24 h-24 min-[380px]:w-28 min-[380px]:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full p-1 sm:p-2 transition-all duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.8)] ${
+                isSaleActive
+                  ? "bg-gradient-to-b from-rose-500 via-red-500 to-amber-500 ring-4 ring-rose-500/40 scale-105 shadow-[0_0_40px_rgba(244,63,94,0.55)]"
+                  : "bg-gradient-to-b from-rose-500/40 via-zinc-800 to-amber-500/30 group-hover:from-rose-500 group-hover:via-red-500/70 group-hover:to-amber-500 group-hover:scale-105 group-hover:shadow-[0_0_40px_rgba(244,63,94,0.45)]"
+              }`}
+            >
+              {/* Floating Sale Tag on Top of Portal */}
+              <div className="absolute -top-2.5 sm:-top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-full bg-gradient-to-r from-rose-600 via-red-600 to-amber-500 px-2 sm:px-3 py-0.5 sm:py-1 text-[8px] min-[380px]:text-[9px] sm:text-[11px] font-black uppercase tracking-wider text-white shadow-lg shadow-rose-950/60 border border-white/25 whitespace-nowrap">
+                <Flame size={12} className="text-amber-200 fill-amber-200 animate-pulse shrink-0" />
+                <span>HOT OFFERS</span>
+              </div>
+
+              {/* Inner Circle Clipping Container */}
+              <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
+                {/* Sale Streetwear Model Image */}
+                <Image
+                  src={saleSrc}
+                  alt="Sale & Special Offers Streetwear"
+                  fill
+                  priority
+                  unoptimized
+                  sizes="(max-width: 640px) 112px, (max-width: 768px) 176px, 256px"
+                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+                  onError={() => setSaleSrc("/products/red-hang.jpg")}
+                />
+
+                {/* Warm Fiery Vignette Overlay */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-rose-950/40 via-transparent to-black/20 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Streetwear Pill Button */}
+            <div className="mt-3 sm:mt-5 md:mt-6 w-full max-w-[105px] min-[380px]:max-w-[125px] sm:max-w-[170px] md:max-w-[190px]">
+              <Link
+                href="/catalog?sale=true"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelect("sale");
+                }}
+                className={`relative flex items-center justify-center gap-1 sm:gap-2 w-full rounded-full py-2 sm:py-3 md:py-3.5 text-[10px] min-[380px]:text-xs sm:text-sm font-black tracking-[0.14em] sm:tracking-[0.18em] uppercase transition-all duration-300 shadow-xl ${
+                  isSaleActive
+                    ? "bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 text-white shadow-[0_0_25px_rgba(244,63,94,0.6)] scale-105"
+                    : "bg-white text-zinc-950 hover:bg-gradient-to-r hover:from-rose-500 hover:to-amber-500 hover:text-white group-hover:bg-gradient-to-r group-hover:from-rose-500 group-hover:via-red-500 group-hover:to-amber-500 group-hover:text-white group-hover:scale-105 group-hover:shadow-[0_0_25px_rgba(244,63,94,0.4)]"
+                }`}
+              >
+                <span>SALE</span>
+                <Flame size={13} className="transition-transform group-hover:scale-110 text-amber-500 fill-amber-500 group-hover:text-amber-200 group-hover:fill-amber-200 hidden min-[380px]:inline-block" />
               </Link>
             </div>
           </div>

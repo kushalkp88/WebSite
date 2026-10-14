@@ -8,6 +8,7 @@ import {
   ChevronUp,
   X,
   Check,
+  Flame,
 } from "lucide-react";
 import {
   isOutOfStock,
@@ -108,12 +109,33 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
   const filtered = useMemo(() => {
     const badge = sanitizeParam(params.get("badge"));
+    const isSale = params.get("sale") === "true" || params.get("offers") === "true";
     const rawQ = queryQ ?? search;
     const q = rawQ.trim().toLowerCase();
 
     return products.filter((p) => {
       // Actively exclude deprecated kids department records from storefront
       if (p.section?.toLowerCase() === "kids") return false;
+
+      // Filter for sale / offers
+      if (isSale) {
+        const hasDiscount =
+          p.discountPrice !== null &&
+          p.discountPrice !== undefined &&
+          p.discountPrice < p.price;
+        const hasSaleBadge =
+          p.badges &&
+          p.badges.some((b) => {
+            const l = b.toLowerCase();
+            return (
+              l.includes("sale") ||
+              l.includes("offer") ||
+              l.includes("deal") ||
+              l.includes("hot")
+            );
+          });
+        if (!hasDiscount && !hasSaleBadge) return false;
+      }
 
       if (q && !p.title.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q)) return false;
       const sec = (p.section ?? "men").toLowerCase();
@@ -208,6 +230,7 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
     SORT_OPTIONS.find((o) => o.id === sort)?.label ?? "Featured";
 
   const categoryName = useMemo(() => {
+    const isSale = params.get("sale") === "true" || params.get("offers") === "true";
     const rawGender = sanitizeParam(params.get("gender"))?.toLowerCase();
     const gender = rawGender && VALID_STOREFRONT_GENDERS.has(rawGender) ? rawGender : null;
     const type = sanitizeParam(params.get("type"));
@@ -216,6 +239,10 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
 
     const genderPrefix = gender ? `${gender.toUpperCase()}'S` : "";
 
+    if (isSale) {
+      if (genderPrefix) return `${genderPrefix} SPECIAL OFFERS & SALE`;
+      return "SPECIAL OFFERS & SALE";
+    }
     if (genderPrefix && type && cat) {
       return `${genderPrefix} ${type.toUpperCase()} • ${cat.toUpperCase()}`;
     }
@@ -247,6 +274,28 @@ export function Catalog({ initial }: { initial: ProductDTO[] }) {
               {filtered.length} items
             </span>
           </div>
+
+          {(params.get("sale") === "true" || params.get("offers") === "true") && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold uppercase tracking-wider">
+                <Flame size={12} className="text-rose-500 fill-rose-500" />
+                <span>Special Offers Active</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const sp = new URLSearchParams(params.toString());
+                  sp.delete("sale");
+                  sp.delete("offers");
+                  const qs = sp.toString();
+                  router.push(qs ? `/catalog?${qs}` : "/catalog");
+                }}
+                className="text-xs text-rose-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3 h-3" /> Clear Sale Filter
+              </button>
+            </div>
+          )}
 
           {search && (
             <div className="mt-2 flex items-center gap-2">
