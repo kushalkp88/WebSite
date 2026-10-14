@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Ruler, Sparkles, Image as ImageIcon, Table as TableIcon } from "lucide-react";
+import { Image as ImageIcon, Table as TableIcon } from "lucide-react";
 
 export type SizeCategory = "oversized" | "regular" | "crop-top" | "hoodie" | "sweatshirt";
 
@@ -158,17 +158,11 @@ export function SizeGuide({
         })}
       </div>
 
-      {/* Header with Title, Unit Badge (INCHES), and View Toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="font-black text-xs sm:text-sm tracking-tight text-zinc-900 uppercase">
-            {chart.title}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900 shadow-2xs">
-            <Ruler size={11} className="text-amber-700" />
-            <span>All Measurements in Inches (&quot;)</span>
-          </span>
-        </div>
+      {/* Controls Bar: Clean Unit Indicator & View Mode Toggle */}
+      <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-2">
+        <span className="text-xs font-medium text-zinc-500">
+          All measurements in inches (&quot;)
+        </span>
 
         {/* View Mode Toggle: Interactive Table vs Garment Diagram */}
         <div className="flex items-center gap-1 bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 text-[11px]">
