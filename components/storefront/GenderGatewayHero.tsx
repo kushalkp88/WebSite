@@ -198,12 +198,6 @@ export function GenderGatewayHero() {
                   : "bg-gradient-to-b from-rose-500/40 via-zinc-800 to-amber-500/30 group-hover:from-rose-500 group-hover:via-red-500/70 group-hover:to-amber-500 group-hover:scale-105 group-hover:shadow-[0_0_40px_rgba(244,63,94,0.45)]"
               }`}
             >
-              {/* Floating Sale Tag on Top of Portal */}
-              <div className="absolute -top-2.5 sm:-top-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 rounded-full bg-gradient-to-r from-rose-600 via-red-600 to-amber-500 px-2 sm:px-3 py-0.5 sm:py-1 text-[8px] min-[380px]:text-[9px] sm:text-[11px] font-black uppercase tracking-wider text-white shadow-lg shadow-rose-950/60 border border-white/25 whitespace-nowrap">
-                <Flame size={12} className="text-amber-200 fill-amber-200 animate-pulse shrink-0" />
-                <span>HOT OFFERS</span>
-              </div>
-
               {/* Inner Circle Graphic Container - Streetwear Badge with Icon & SALE */}
               <div className="w-full h-full rounded-full overflow-hidden relative bg-gradient-to-br from-[#18181f] via-[#0c0c10] to-[#050508] border border-rose-950/80 flex flex-col items-center justify-center p-2 sm:p-4 select-none">
                 {/* Atmospheric Warm Radial Aura */}
@@ -216,19 +210,16 @@ export function GenderGatewayHero() {
                 <div className="relative z-10 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1">
                   <div className="relative flex items-center justify-center">
                     {/* Outer Crimson Glow Flame */}
-                    <Flame className="w-8 h-8 min-[380px]:w-10 min-[380px]:h-10 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 text-rose-500 fill-rose-500/90 drop-shadow-[0_0_22px_rgba(244,63,94,0.85)]" />
+                    <Flame className="w-9 h-9 min-[380px]:w-11 min-[380px]:h-11 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 text-rose-500 fill-rose-500/90 drop-shadow-[0_0_22px_rgba(244,63,94,0.85)]" />
                     {/* Inner Golden Ember Flame */}
-                    <Flame className="w-4 h-4 min-[380px]:w-5 min-[380px]:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-amber-300 fill-amber-300 absolute bottom-0 drop-shadow-[0_0_12px_rgba(252,211,77,0.95)] animate-pulse" />
+                    <Flame className="w-5 h-5 min-[380px]:w-6 min-[380px]:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-amber-300 fill-amber-300 absolute bottom-0 drop-shadow-[0_0_12px_rgba(252,211,77,0.95)] animate-pulse" />
                   </div>
                 </div>
 
                 {/* Streetwear Typographic Text */}
-                <div className="relative z-10 mt-0.5 sm:mt-1.5 md:mt-2 text-center">
-                  <span className="block font-black text-xs min-[380px]:text-sm sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-300 to-orange-400 drop-shadow-[0_2px_12px_rgba(244,63,94,0.6)]">
+                <div className="relative z-10 mt-1 sm:mt-2 text-center">
+                  <span className="block font-black text-xs min-[380px]:text-sm sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.22em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-300 to-orange-400 drop-shadow-[0_2px_12px_rgba(244,63,94,0.6)]">
                     SALE
-                  </span>
-                  <span className="hidden sm:block text-[8px] md:text-[9px] lg:text-[10px] font-mono font-bold tracking-[0.2em] text-zinc-400 uppercase mt-0.5">
-                    UP TO 60% OFF
                   </span>
                 </div>
               </div>
