@@ -10,7 +10,6 @@ const HERO_MEN_IMAGE =
   "https://ik.imagekit.io/unhinged/hero/men-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
 const HERO_WOMEN_IMAGE =
   "https://ik.imagekit.io/unhinged/hero/women-model.jpg?tr=w-600,h-600,fo-auto,q-85,f-auto";
-const HERO_SALE_IMAGE = "/hero/sale-model.jpg";
 
 export function GenderGatewayHero() {
   const router = useRouter();
@@ -19,7 +18,6 @@ export function GenderGatewayHero() {
   const isSaleActive = searchParams.get("sale") === "true";
   const [menSrc, setMenSrc] = useState(HERO_MEN_IMAGE);
   const [womenSrc, setWomenSrc] = useState(HERO_WOMEN_IMAGE);
-  const [saleSrc, setSaleSrc] = useState(HERO_SALE_IMAGE);
 
   function handleSelect(target: "men" | "women" | "sale") {
     if (target === "sale") {
@@ -187,7 +185,7 @@ export function GenderGatewayHero() {
             </div>
           </div>
 
-          {/* ================= SALE & OFFERS CIRCULAR PORTAL ================= */}
+          {/* ================= SALE & OFFERS CIRCULAR PORTAL (GRAPHIC EMBLEM) ================= */}
           <div
             onClick={() => handleSelect("sale")}
             className="group flex flex-col items-center cursor-pointer w-full relative"
@@ -206,22 +204,33 @@ export function GenderGatewayHero() {
                 <span>HOT OFFERS</span>
               </div>
 
-              {/* Inner Circle Clipping Container */}
-              <div className="w-full h-full rounded-full overflow-hidden relative bg-zinc-900 border border-black">
-                {/* Sale Streetwear Model Image */}
-                <Image
-                  src={saleSrc}
-                  alt="Sale & Special Offers Streetwear"
-                  fill
-                  priority
-                  unoptimized
-                  sizes="(max-width: 640px) 112px, (max-width: 768px) 176px, 256px"
-                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
-                  onError={() => setSaleSrc("/products/red-hang.jpg")}
-                />
+              {/* Inner Circle Graphic Container - Streetwear Badge with Icon & SALE */}
+              <div className="w-full h-full rounded-full overflow-hidden relative bg-gradient-to-br from-[#18181f] via-[#0c0c10] to-[#050508] border border-rose-950/80 flex flex-col items-center justify-center p-2 sm:p-4 select-none">
+                {/* Atmospheric Warm Radial Aura */}
+                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(244,63,94,0.28)_0%,rgba(245,158,11,0.12)_45%,transparent_75%)] pointer-events-none transition-opacity duration-500 group-hover:opacity-100 opacity-75" />
 
-                {/* Warm Fiery Vignette Overlay */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-rose-950/40 via-transparent to-black/20 pointer-events-none" />
+                {/* Subtle Technical Dashed Blueprint Ring */}
+                <div className="absolute inset-2 sm:inset-3 rounded-full border border-dashed border-rose-500/25 pointer-events-none group-hover:border-rose-500/40 transition-colors" />
+
+                {/* Glowing Streetwear Flame Icon */}
+                <div className="relative z-10 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-translate-y-1">
+                  <div className="relative flex items-center justify-center">
+                    {/* Outer Crimson Glow Flame */}
+                    <Flame className="w-8 h-8 min-[380px]:w-10 min-[380px]:h-10 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 text-rose-500 fill-rose-500/90 drop-shadow-[0_0_22px_rgba(244,63,94,0.85)]" />
+                    {/* Inner Golden Ember Flame */}
+                    <Flame className="w-4 h-4 min-[380px]:w-5 min-[380px]:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-amber-300 fill-amber-300 absolute bottom-0 drop-shadow-[0_0_12px_rgba(252,211,77,0.95)] animate-pulse" />
+                  </div>
+                </div>
+
+                {/* Streetwear Typographic Text */}
+                <div className="relative z-10 mt-0.5 sm:mt-1.5 md:mt-2 text-center">
+                  <span className="block font-black text-xs min-[380px]:text-sm sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-300 to-orange-400 drop-shadow-[0_2px_12px_rgba(244,63,94,0.6)]">
+                    SALE
+                  </span>
+                  <span className="hidden sm:block text-[8px] md:text-[9px] lg:text-[10px] font-mono font-bold tracking-[0.2em] text-zinc-400 uppercase mt-0.5">
+                    UP TO 60% OFF
+                  </span>
+                </div>
               </div>
             </div>
 
