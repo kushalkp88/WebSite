@@ -26,6 +26,7 @@ import {
 } from "@/lib/product";
 import { useShopActions, useIsWished } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
+import { SizeGuide, detectSizeCategory } from "./SizeGuide";
 
 export function ProductDetail({ product }: { product: ProductDTO }) {
   const [size, setSize] = useState<Size | null>(() => {
@@ -339,11 +340,25 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-900">
                 Select Size
               </span>
-              {size && selectedSizeStock > 0 && selectedSizeStock <= 5 && (
-                <span className="text-xs text-amber-600 font-semibold">
-                  Only {selectedSizeStock} left!
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {size && selectedSizeStock > 0 && selectedSizeStock <= 5 && (
+                  <span className="text-xs text-amber-600 font-semibold">
+                    Only {selectedSizeStock} left!
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenSection("size");
+                    const el = document.getElementById("product-accordions");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-1 text-xs font-bold text-zinc-600 hover:text-black hover:underline cursor-pointer"
+                >
+                  <Ruler size={13} className="text-zinc-500" />
+                  <span>Size Guide (Inches)</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2.5">
@@ -407,7 +422,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           </p>
 
           {/* Collapsible Accordions */}
-          <div className="border-t border-zinc-200 divide-y divide-zinc-200 pt-2">
+          <div id="product-accordions" className="border-t border-zinc-200 divide-y divide-zinc-200 pt-2 scroll-mt-24">
             {/* Accordion 1: Fabric & Fit */}
             <div className="py-3.5">
               <button
@@ -432,7 +447,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               )}
             </div>
 
-            {/* Accordion 2: Size Chart */}
+            {/* Accordion 2: Size Chart & Measurement Guide */}
             <div className="py-3.5">
               <button
                 type="button"
@@ -441,7 +456,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               >
                 <span className="flex items-center gap-1.5">
                   <Ruler className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Size & Measurement Guide</span>
+                  <span>Size & Measurement Guide (Inches)</span>
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
@@ -450,26 +465,10 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                 />
               </button>
               {openSection === "size" && (
-                <div className="mt-3 overflow-x-auto text-xs text-zinc-600 animate-fade-in">
-                  <table className="w-full text-left border border-zinc-200 rounded-xl overflow-hidden">
-                    <thead className="bg-zinc-50 text-[11px] font-bold uppercase text-zinc-700">
-                      <tr>
-                        <th className="p-2">Size</th>
-                        <th className="p-2">Chest (Inches)</th>
-                        <th className="p-2">Length (Inches)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200">
-                      <tr><td className="p-2 font-bold text-zinc-900">S</td><td className="p-2">42</td><td className="p-2">28</td></tr>
-                      <tr><td className="p-2 font-bold text-zinc-900">M</td><td className="p-2">44</td><td className="p-2">29</td></tr>
-                      <tr><td className="p-2 font-bold text-zinc-900">L</td><td className="p-2">46</td><td className="p-2">30</td></tr>
-                      <tr><td className="p-2 font-bold text-zinc-900">XL</td><td className="p-2">48</td><td className="p-2">31</td></tr>
-                    </tbody>
-                  </table>
-                  <p className="mt-2 text-[11px] text-zinc-400 italic">
-                    Note: For a standard fit, size down. For intended streetwear oversized fit, order true to size.
-                  </p>
-                </div>
+                <SizeGuide
+                  initialCategory={detectSizeCategory(product.category, product.title)}
+                  selectedSize={size ?? undefined}
+                />
               )}
             </div>
 
