@@ -25,9 +25,18 @@ const VALID_COUPONS = new Set(["INK10", "UNHINGED10", "DROP10"]);
 const FREE_SHIPPING_THRESHOLD = 999;
 const STANDARD_SHIPPING_FEE = 99;
 const GSM_OFFSETS: Record<string, number> = {
+  // Regular Types
+  Gentle: -50,
+  Resonant: 0,
+  Majestic: 100,
+  // Oversized (OS)
   Breeze: -50,
   Gale: 0,
   Storm: 100,
+  // Crop Tops
+  Spark: -50,
+  Flame: 0,
+  Blaze: 100,
 };
 
 export async function POST(req: Request) {

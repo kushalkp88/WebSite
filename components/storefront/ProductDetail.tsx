@@ -31,7 +31,6 @@ import { ProductImage } from "./ProductImage";
 import { SizeGuide, detectSizeCategory } from "./SizeGuide";
 
 export type GsmOption = {
-  id: "breeze" | "gale" | "storm";
   name: string;
   gsm: number;
   tagline: string;
@@ -40,37 +39,97 @@ export type GsmOption = {
   badge?: string;
 };
 
-export const GSM_CONFIGS: GsmOption[] = [
-  {
-    id: "breeze",
-    name: "Breeze",
-    gsm: 180,
-    tagline: "Light & Airy",
-    description: "180 GSM — Ultra-light, feather-soft & breathable combed cotton. Perfect for warm weather and relaxed, effortless drape.",
-    priceOffset: -50,
-  },
-  {
-    id: "gale",
-    name: "Gale",
-    gsm: 240,
-    tagline: "Signature Heavy",
-    description: "240 GSM — Our signature heavyweight streetwear cotton. Distinctive boxy structure, shape retention, and premium handfeel.",
-    priceOffset: 0,
-    badge: "Popular",
-  },
-  {
-    id: "storm",
-    name: "Storm",
-    gsm: 260,
-    tagline: "Ultra Heavyweight",
-    description: "260 GSM — Ultra-dense luxury architectural cotton. Maximum boxy silhouette, zero cling, built to endure.",
-    priceOffset: 100,
-  },
-];
+export const GSM_CONFIG_BY_CATEGORY: Record<"regular" | "oversized" | "crop-top", GsmOption[]> = {
+  regular: [
+    {
+      name: "Gentle",
+      gsm: 180,
+      tagline: "Light & Soft",
+      description: "180 GSM — Gentle combed cotton. Featherlight, breathable, and soft against the skin for relaxed all-day comfort.",
+      priceOffset: -50,
+    },
+    {
+      name: "Resonant",
+      gsm: 240,
+      tagline: "Signature Balance",
+      description: "240 GSM — Resonant everyday classic. Structured drape with durable comfort and crisp shape retention.",
+      priceOffset: 0,
+      badge: "Popular",
+    },
+    {
+      name: "Majestic",
+      gsm: 260,
+      tagline: "Heavyweight Luxury",
+      description: "260 GSM — Majestic dense cotton. Maximum tailored structure, zero cling, and rich, substantial feel.",
+      priceOffset: 100,
+    },
+  ],
+  oversized: [
+    {
+      name: "Breeze",
+      gsm: 180,
+      tagline: "Light & Airy",
+      description: "180 GSM — Breeze lightweight cotton. Fluid drop-shoulder drape engineered for effortless warm-weather style.",
+      priceOffset: -50,
+    },
+    {
+      name: "Gale",
+      gsm: 240,
+      tagline: "Signature Heavy",
+      description: "240 GSM — Gale heavyweight streetwear cotton. Distinctive boxy structure, shape retention, and premium handfeel.",
+      priceOffset: 0,
+      badge: "Popular",
+    },
+    {
+      name: "Storm",
+      gsm: 260,
+      tagline: "Ultra Heavyweight",
+      description: "260 GSM — Storm ultra-dense architectural cotton. Maximum boxy silhouette, zero cling, built to endure.",
+      priceOffset: 100,
+    },
+  ],
+  "crop-top": [
+    {
+      name: "Spark",
+      gsm: 180,
+      tagline: "Breezy & Light",
+      description: "180 GSM — Spark ultra-soft breathable cotton. Featherlight, cooling feel designed for effortless cropped silhouettes.",
+      priceOffset: -50,
+    },
+    {
+      name: "Flame",
+      gsm: 240,
+      tagline: "Signature Sculpt",
+      description: "240 GSM — Flame mid-heavy cotton. Structured crop profile that holds its cut without folding or clinging.",
+      priceOffset: 0,
+      badge: "Popular",
+    },
+    {
+      name: "Blaze",
+      gsm: 260,
+      tagline: "Dense & Bold",
+      description: "260 GSM — Blaze luxury dense cotton. Bold architectural crop shape with crisp lines and premium durability.",
+      priceOffset: 100,
+    },
+  ],
+};
 
-export function isGsmEligible(category?: string, title?: string): boolean {
+export function getGsmConfigForProduct(category?: string, title?: string): {
+  categoryKey: "regular" | "oversized" | "crop-top";
+  options: GsmOption[];
+  fitLabel: string;
+} | null {
   const cat = detectSizeCategory(category, title);
-  return cat === "regular" || cat === "oversized" || cat === "crop-top";
+  if (cat === "regular") {
+    return { categoryKey: "regular", options: GSM_CONFIG_BY_CATEGORY.regular, fitLabel: "Regular Fit" };
+  }
+  if (cat === "oversized") {
+    return { categoryKey: "oversized", options: GSM_CONFIG_BY_CATEGORY.oversized, fitLabel: "Oversized Fit (OS)" };
+  }
+  if (cat === "crop-top") {
+    return { categoryKey: "crop-top", options: GSM_CONFIG_BY_CATEGORY["crop-top"], fitLabel: "Crop Tops" };
+  }
+  return null;
 }
 
 export function ProductDetail({ product }: { product: ProductDTO }) {
@@ -83,11 +142,17 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const [justAdded, setJustAdded] = useState(false);
   const [isReduced, setIsReduced] = useState(false);
 
-  const isGsmSupported = useMemo(() => {
-    return isGsmEligible(product.category, product.title);
+  const gsmConfig = useMemo(() => {
+    return getGsmConfigForProduct(product.category, product.title);
   }, [product.category, product.title]);
 
-  const [selectedGsm, setSelectedGsm] = useState<GsmOption>(GSM_CONFIGS[1]); // Gale (default)
+  const isGsmSupported = gsmConfig !== null;
+  const gsmOptions = gsmConfig?.options ?? [];
+
+  // Default to index 1 (240 GSM - Resonant / Gale / Flame)
+  const [selectedGsmIndex, setSelectedGsmIndex] = useState(1);
+  const selectedGsm = gsmOptions[selectedGsmIndex] ?? gsmOptions[1] ?? null;
+
   const [showGsmModal, setShowGsmModal] = useState(false);
 
   const thumbContainerRef = useRef<HTMLDivElement>(null);
@@ -96,7 +161,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const sale = salePrice(product);
   const off = percentOff(product);
 
-  const currentPriceOffset = isGsmSupported ? selectedGsm.priceOffset : 0;
+  const currentPriceOffset = selectedGsm ? selectedGsm.priceOffset : 0;
   const currentSale = Math.max(0, sale + currentPriceOffset);
   const currentMrp = Math.max(0, product.price + currentPriceOffset);
 
@@ -397,7 +462,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           )}
 
           {/* Fabric Density / GSM Selector (Regular fits, Oversized & Crop tops only) */}
-          {isGsmSupported && (
+          {isGsmSupported && gsmOptions.length > 0 && selectedGsm && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -424,17 +489,17 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                 </span>
               </div>
 
-              {/* 3 Selector Cards: Breeze, Gale, Storm */}
+              {/* 3 Selector Cards based on product fit */}
               <div className="grid grid-cols-3 gap-2.5">
-                {GSM_CONFIGS.map((opt) => {
-                  const isSelected = selectedGsm.id === opt.id;
+                {gsmOptions.map((opt, idx) => {
+                  const isSelected = selectedGsmIndex === idx;
                   const optPrice = Math.max(0, sale + opt.priceOffset);
 
                   return (
                     <button
-                      key={opt.id}
+                      key={opt.name}
                       type="button"
-                      onClick={() => setSelectedGsm(opt)}
+                      onClick={() => setSelectedGsmIndex(idx)}
                       className={`relative p-3 rounded-xl transition-all border text-left flex flex-col justify-between cursor-pointer ${
                         isSelected
                           ? "bg-zinc-900 text-white border-zinc-900 shadow-md ring-2 ring-zinc-900/20 scale-[1.02]"
@@ -615,12 +680,12 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               {openSection === "fabric" && (
                 <div className="mt-3 space-y-2 text-xs text-zinc-600 leading-relaxed animate-fade-in">
                   <p>
-                    • <strong>{isGsmSupported ? `${selectedGsm.gsm} GSM (${selectedGsm.name} Edition)` : "240 GSM"}</strong>{" "}
-                    {selectedGsm.id === "breeze"
-                      ? "Featherlight French Terry 100% Combed Cotton."
-                      : selectedGsm.id === "storm"
-                      ? "Ultra-Dense Heavyweight 100% Combed Cotton."
-                      : "Heavyweight French Terry 100% Combed Cotton."}
+                    • <strong>{selectedGsm ? `${selectedGsm.gsm} GSM (${selectedGsm.name} Edition)` : "240 GSM"}</strong>{" "}
+                    {selectedGsm?.gsm === 180
+                      ? "Featherlight combed cotton for airy, effortless everyday comfort."
+                      : selectedGsm?.gsm === 260
+                      ? "Ultra-dense luxury cotton for maximum structured architectural drape."
+                      : "Signature heavyweight streetwear cotton with shape retention."}
                   </p>
                   <p>• Tailored silhouette designed for comfortable everyday drape.</p>
                   <p>• High-density screen print with fade-resistant discharge inks.</p>
@@ -690,7 +755,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-zinc-200 text-zinc-900 space-y-4"
+            className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-zinc-200 text-zinc-900 space-y-4 max-h-[90vh] overflow-y-auto"
           >
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-zinc-100 pb-3">
@@ -721,13 +786,16 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               <strong>GSM</strong> stands for <em>Grams per Square Meter</em>. It is the global standard metric measuring the density, thickness, and heft of the fabric. A higher GSM gives a more structured, boxy drape that holds its silhouette without clinging.
             </p>
 
-            {/* 3 Tiers Detailed breakdown */}
+            {/* 3 Tiers Detailed breakdown for this product */}
             <div className="space-y-2.5 pt-1">
-              {GSM_CONFIGS.map((opt) => (
+              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                Available options for this product:
+              </p>
+              {gsmOptions.map((opt, idx) => (
                 <div
-                  key={opt.id}
+                  key={opt.name}
                   className={`p-3 rounded-xl border text-xs transition-all ${
-                    selectedGsm.id === opt.id
+                    selectedGsmIndex === idx
                       ? "border-zinc-900 bg-zinc-50 shadow-xs ring-1 ring-zinc-900/10"
                       : "border-zinc-200 bg-white"
                   }`}
@@ -755,6 +823,69 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Complete GSM & Fit Nomenclature Guide Matrix */}
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                Official Nomenclature by Fit:
+              </p>
+              <div className="border border-zinc-200 rounded-xl overflow-hidden text-[11px] bg-zinc-50/50">
+                <table className="w-full text-center">
+                  <thead className="bg-zinc-100 border-b border-zinc-200 font-black text-zinc-900 text-[10px] uppercase tracking-wider">
+                    <tr>
+                      <th className="py-2 px-2.5 text-left">GSM</th>
+                      <th className={`py-2 px-2 ${gsmConfig?.categoryKey === "regular" ? "bg-zinc-900 text-white" : ""}`}>
+                        Regular Types
+                      </th>
+                      <th className={`py-2 px-2 ${gsmConfig?.categoryKey === "oversized" ? "bg-zinc-900 text-white" : ""}`}>
+                        OS (Oversized)
+                      </th>
+                      <th className={`py-2 px-2 ${gsmConfig?.categoryKey === "crop-top" ? "bg-zinc-900 text-white" : ""}`}>
+                        Crop tops
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 font-medium">
+                    <tr className={selectedGsm?.gsm === 180 ? "bg-emerald-50/70" : ""}>
+                      <td className="py-2 px-2.5 text-left font-mono font-bold text-zinc-900">180</td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "regular" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Gentle
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "oversized" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Breeze
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "crop-top" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Spark
+                      </td>
+                    </tr>
+                    <tr className={selectedGsm?.gsm === 240 ? "bg-emerald-50/70" : ""}>
+                      <td className="py-2 px-2.5 text-left font-mono font-bold text-zinc-900">240</td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "regular" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Resonant
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "oversized" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Gale
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "crop-top" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Flame
+                      </td>
+                    </tr>
+                    <tr className={selectedGsm?.gsm === 260 ? "bg-emerald-50/70" : ""}>
+                      <td className="py-2 px-2.5 text-left font-mono font-bold text-zinc-900">260</td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "regular" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Majestic
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "oversized" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Storm
+                      </td>
+                      <td className={`py-2 px-2 ${gsmConfig?.categoryKey === "crop-top" ? "font-bold text-zinc-950" : "text-zinc-600"}`}>
+                        Blaze
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Footer CTA */}
