@@ -26,17 +26,17 @@ const FREE_SHIPPING_THRESHOLD = 999;
 const STANDARD_SHIPPING_FEE = 99;
 const GSM_OFFSETS: Record<string, number> = {
   // Regular Types
-  Gentle: -50,
-  Resonant: 0,
-  Majestic: 100,
+  Gentle: 0,
+  Resonant: 30,
+  Majestic: 60,
   // Oversized (OS)
-  Breeze: -50,
-  Gale: 0,
-  Storm: 100,
+  Breeze: 0,
+  Gale: 30,
+  Storm: 60,
   // Crop Tops
-  Spark: -50,
-  Flame: 0,
-  Blaze: 100,
+  Spark: 0,
+  Flame: 30,
+  Blaze: 60,
 };
 
 export async function POST(req: Request) {
