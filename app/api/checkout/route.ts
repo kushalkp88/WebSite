@@ -10,6 +10,7 @@ interface CheckoutItemInput {
   productId: string;
   size: string;
   qty: number;
+  gsm?: string;
 }
 
 interface CheckoutRequestBody {
@@ -23,6 +24,11 @@ interface CheckoutRequestBody {
 const VALID_COUPONS = new Set(["INK10", "UNHINGED10", "DROP10"]);
 const FREE_SHIPPING_THRESHOLD = 999;
 const STANDARD_SHIPPING_FEE = 99;
+const GSM_OFFSETS: Record<string, number> = {
+  Breeze: -50,
+  Gale: 0,
+  Storm: 100,
+};
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Validate item shapes and size values
-    const validatedItems: { productId: string; size: Size; qty: number }[] = [];
+    const validatedItems: { productId: string; size: Size; qty: number; gsm?: string }[] = [];
     for (const item of rawItems) {
       if (!item.productId || typeof item.productId !== "string") {
         return NextResponse.json({ error: "Invalid product ID in cart item." }, { status: 400 });
@@ -60,10 +66,12 @@ export async function POST(req: Request) {
       if (!Number.isInteger(qty) || qty <= 0 || qty > 10) {
         return NextResponse.json({ error: "Quantity must be an integer between 1 and 10 per item." }, { status: 400 });
       }
+      const validGsm = item.gsm && typeof item.gsm === "string" && GSM_OFFSETS[item.gsm] !== undefined ? item.gsm : undefined;
       validatedItems.push({
         productId: item.productId,
         size: item.size as Size,
         qty,
+        gsm: validGsm,
       });
     }
 
@@ -93,8 +101,10 @@ export async function POST(req: Request) {
     let calculatedSubtotal = 0;
     for (const item of validatedItems) {
       const p = productMap.get(item.productId)!;
-      // Price is ALWAYS read from database, never trusted from client payload
-      const unitPrice = p.discountPrice ?? p.price;
+      // Price is ALWAYS read from database with GSM offset verified, never trusted from client payload
+      const basePrice = p.discountPrice ?? p.price;
+      const gsmOffset = item.gsm ? GSM_OFFSETS[item.gsm] ?? 0 : 0;
+      const unitPrice = Math.max(0, basePrice + gsmOffset);
       calculatedSubtotal += unitPrice * item.qty;
     }
 
@@ -148,12 +158,15 @@ export async function POST(req: Request) {
           items: {
             create: validatedItems.map((item) => {
               const p = productMap.get(item.productId)!;
+              const basePrice = p.discountPrice ?? p.price;
+              const gsmOffset = item.gsm ? GSM_OFFSETS[item.gsm] ?? 0 : 0;
+              const unitPrice = Math.max(0, basePrice + gsmOffset);
               return {
                 productId: p.id,
-                title: p.title,
+                title: item.gsm ? `${p.title} (${item.gsm})` : p.title,
                 slug: p.slug,
                 size: item.size,
-                price: p.discountPrice ?? p.price,
+                price: unitPrice,
                 qty: item.qty,
               };
             }),

@@ -70,6 +70,7 @@ export function CartDrawer() {
             productId: i.productId,
             size: i.size,
             qty: i.qty,
+            gsm: i.gsm,
           })),
           couponCode: couponApplied ? coupon : undefined,
         }),
@@ -242,7 +243,7 @@ export function CartDrawer() {
               <>
                 <ul className="flex-1 space-y-4 overflow-y-auto p-6 divide-y divide-zinc-100">
                   {cart.map((item) => (
-                    <li key={`${item.productId}-${item.size}`} className="pt-4 first:pt-0 flex gap-4">
+                    <li key={`${item.productId}-${item.size}-${item.gsm || ""}`} className="pt-4 first:pt-0 flex gap-4">
                       {/* Thumbnail */}
                       <div className="aspect-[3/4] h-24 rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -267,17 +268,22 @@ export function CartDrawer() {
                             <button
                               type="button"
                               className="text-zinc-400 hover:text-red-500 p-1 cursor-pointer"
-                              onClick={() => remove(item.productId, item.size)}
+                              onClick={() => remove(item.productId, item.size, item.gsm)}
                               title="Remove item"
                             >
                               <Trash2 size={14} />
                             </button>
                           </div>
-                          <div className="mt-1 flex items-center gap-2">
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             <span className="text-[11px] font-bold bg-zinc-100 border border-zinc-200 text-zinc-700 px-2 py-0.5 rounded">
                               Size: {item.size}
                             </span>
-                            <span className="text-xs font-bold text-zinc-900">
+                            {item.gsm && (
+                              <span className="text-[11px] font-bold bg-zinc-900 text-white px-2 py-0.5 rounded tracking-wide">
+                                {item.gsm}
+                              </span>
+                            )}
+                            <span className="text-xs font-bold text-zinc-900 ml-auto">
                               {formatInr(item.price)}
                             </span>
                           </div>
@@ -300,7 +306,7 @@ export function CartDrawer() {
                               type="button"
                               className="p-1 rounded text-zinc-500 hover:text-black hover:bg-zinc-100 cursor-pointer"
                               onClick={() =>
-                                setQty(item.productId, item.size, item.qty - 1)
+                                setQty(item.productId, item.size, item.qty - 1, item.gsm)
                               }
                             >
                               <Minus size={12} />
@@ -313,7 +319,7 @@ export function CartDrawer() {
                               className="p-1 rounded text-zinc-500 hover:text-black hover:bg-zinc-100 disabled:opacity-30 cursor-pointer"
                               disabled={item.qty >= item.maxStock}
                               onClick={() =>
-                                setQty(item.productId, item.size, item.qty + 1)
+                                setQty(item.productId, item.size, item.qty + 1, item.gsm)
                               }
                             >
                               <Plus size={12} />

@@ -10,7 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingBag, 
-  Check 
+  Check,
+  Info,
+  X
 } from "lucide-react";
 import {
   formatInr,
@@ -28,6 +30,49 @@ import { useShopActions, useIsWished } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
 import { SizeGuide, detectSizeCategory } from "./SizeGuide";
 
+export type GsmOption = {
+  id: "breeze" | "gale" | "storm";
+  name: string;
+  gsm: number;
+  tagline: string;
+  description: string;
+  priceOffset: number;
+  badge?: string;
+};
+
+export const GSM_CONFIGS: GsmOption[] = [
+  {
+    id: "breeze",
+    name: "Breeze",
+    gsm: 180,
+    tagline: "Light & Airy",
+    description: "180 GSM — Ultra-light, feather-soft & breathable combed cotton. Perfect for warm weather and relaxed, effortless drape.",
+    priceOffset: -50,
+  },
+  {
+    id: "gale",
+    name: "Gale",
+    gsm: 240,
+    tagline: "Signature Heavy",
+    description: "240 GSM — Our signature heavyweight streetwear cotton. Distinctive boxy structure, shape retention, and premium handfeel.",
+    priceOffset: 0,
+    badge: "Popular",
+  },
+  {
+    id: "storm",
+    name: "Storm",
+    gsm: 260,
+    tagline: "Ultra Heavyweight",
+    description: "260 GSM — Ultra-dense luxury architectural cotton. Maximum boxy silhouette, zero cling, built to endure.",
+    priceOffset: 100,
+  },
+];
+
+export function isGsmEligible(category?: string, title?: string): boolean {
+  const cat = detectSizeCategory(category, title);
+  return cat === "regular" || cat === "oversized" || cat === "crop-top";
+}
+
 export function ProductDetail({ product }: { product: ProductDTO }) {
   const [size, setSize] = useState<Size | null>(() => {
     // Default to first available size
@@ -38,11 +83,22 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
   const [justAdded, setJustAdded] = useState(false);
   const [isReduced, setIsReduced] = useState(false);
 
+  const isGsmSupported = useMemo(() => {
+    return isGsmEligible(product.category, product.title);
+  }, [product.category, product.title]);
+
+  const [selectedGsm, setSelectedGsm] = useState<GsmOption>(GSM_CONFIGS[1]); // Gale (default)
+  const [showGsmModal, setShowGsmModal] = useState(false);
+
   const thumbContainerRef = useRef<HTMLDivElement>(null);
 
   const oos = isOutOfStock(product);
   const sale = salePrice(product);
   const off = percentOff(product);
+
+  const currentPriceOffset = isGsmSupported ? selectedGsm.priceOffset : 0;
+  const currentSale = Math.max(0, sale + currentPriceOffset);
+  const currentMrp = Math.max(0, product.price + currentPriceOffset);
 
   const colorDots = useMemo(() => {
     return getProductColorDots(product);
@@ -78,10 +134,11 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
       slug: product.slug,
       title: product.title,
       image: product.imageUrls[activeImg] ?? product.imageUrls[0] ?? "",
-      price: sale,
+      price: currentSale,
       size,
       qty: 1,
       maxStock: max,
+      gsm: isGsmSupported ? selectedGsm.name : undefined,
     });
 
     setJustAdded(true);
@@ -270,17 +327,22 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           {/* Pricing */}
           <div className="flex items-baseline gap-3 border-y border-zinc-200 py-4">
             <span className="text-3xl font-black text-zinc-900">
-              {formatInr(sale)}
+              {formatInr(currentSale)}
             </span>
             {product.discountPrice != null && (
               <>
                 <span className="text-base text-zinc-400 line-through font-semibold">
-                  {formatInr(product.price)}
+                  {formatInr(currentMrp)}
                 </span>
                 <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
                   Save {off}%
                 </span>
               </>
+            )}
+            {isGsmSupported && (
+              <span className="text-xs font-bold text-zinc-700 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md ml-auto">
+                {selectedGsm.name} Edition
+              </span>
             )}
           </div>
 
@@ -327,6 +389,119 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
                         }}
                       />
                       <span className="capitalize">{dot.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Fabric Density / GSM Selector (Regular fits, Oversized & Crop tops only) */}
+          {isGsmSupported && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900">
+                    Fabric Density
+                  </span>
+                  {/* Small hidden info icon explaining GSM */}
+                  <button
+                    type="button"
+                    onClick={() => setShowGsmModal(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-black transition-colors rounded-full px-2 py-0.5 hover:bg-zinc-100 cursor-pointer border border-transparent hover:border-zinc-200"
+                    title="Click to learn about fabric density & weights"
+                  >
+                    <Info size={12} className="text-zinc-500" />
+                    <span className="underline decoration-dotted underline-offset-2">What is this?</span>
+                  </button>
+                </div>
+
+                <span className="text-xs font-medium text-zinc-500">
+                  Selected:{" "}
+                  <strong className="text-zinc-900 font-bold">
+                    {selectedGsm.name}
+                  </strong>
+                </span>
+              </div>
+
+              {/* 3 Selector Cards: Breeze, Gale, Storm */}
+              <div className="grid grid-cols-3 gap-2.5">
+                {GSM_CONFIGS.map((opt) => {
+                  const isSelected = selectedGsm.id === opt.id;
+                  const optPrice = Math.max(0, sale + opt.priceOffset);
+
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSelectedGsm(opt)}
+                      className={`relative p-3 rounded-xl transition-all border text-left flex flex-col justify-between cursor-pointer ${
+                        isSelected
+                          ? "bg-zinc-900 text-white border-zinc-900 shadow-md ring-2 ring-zinc-900/20 scale-[1.02]"
+                          : "bg-white text-zinc-800 border-zinc-300 hover:border-zinc-500 hover:text-black"
+                      }`}
+                    >
+                      {opt.badge && (
+                        <span
+                          className={`absolute -top-2 right-2 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            isSelected
+                              ? "bg-emerald-400 text-zinc-950 font-black shadow-xs"
+                              : "bg-zinc-100 text-zinc-700 border border-zinc-300"
+                          }`}
+                        >
+                          {opt.badge}
+                        </span>
+                      )}
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black tracking-tight">
+                            {opt.name}
+                          </span>
+                          <div
+                            className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                              isSelected
+                                ? "border-white bg-white text-zinc-900"
+                                : "border-zinc-300 bg-transparent"
+                            }`}
+                          >
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-zinc-900" />}
+                          </div>
+                        </div>
+                        <p
+                          className={`text-[10px] mt-0.5 font-medium ${
+                            isSelected ? "text-zinc-300" : "text-zinc-500"
+                          }`}
+                        >
+                          {opt.tagline}
+                        </p>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-current/10 flex items-center justify-between">
+                        <span
+                          className={`text-xs font-black ${
+                            isSelected ? "text-white" : "text-zinc-900"
+                          }`}
+                        >
+                          {formatInr(optPrice)}
+                        </span>
+                        {opt.priceOffset !== 0 && (
+                          <span
+                            className={`text-[10px] font-bold ${
+                              isSelected
+                                ? opt.priceOffset > 0
+                                  ? "text-zinc-300"
+                                  : "text-emerald-300"
+                                : opt.priceOffset > 0
+                                ? "text-zinc-500"
+                                : "text-emerald-600"
+                            }`}
+                          >
+                            {opt.priceOffset > 0
+                              ? `+${formatInr(opt.priceOffset)}`
+                              : `-${formatInr(Math.abs(opt.priceOffset))}`}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -409,7 +584,7 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Add to Bag • {formatInr(sale)}</span>
+                  <span>Add to Bag • {formatInr(currentSale)}</span>
                 </>
               )}
             </button>
@@ -439,7 +614,14 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
               </button>
               {openSection === "fabric" && (
                 <div className="mt-3 space-y-2 text-xs text-zinc-600 leading-relaxed animate-fade-in">
-                  <p>• <strong>240 GSM</strong> Heavyweight French Terry 100% Combed Cotton.</p>
+                  <p>
+                    • <strong>{isGsmSupported ? `${selectedGsm.gsm} GSM (${selectedGsm.name} Edition)` : "240 GSM"}</strong>{" "}
+                    {selectedGsm.id === "breeze"
+                      ? "Featherlight French Terry 100% Combed Cotton."
+                      : selectedGsm.id === "storm"
+                      ? "Ultra-Dense Heavyweight 100% Combed Cotton."
+                      : "Heavyweight French Terry 100% Combed Cotton."}
+                  </p>
                   <p>• Tailored silhouette designed for comfortable everyday drape.</p>
                   <p>• High-density screen print with fade-resistant discharge inks.</p>
                   <p>• Pre-shrunk & bio-washed for ultra-soft handfeel.</p>
@@ -497,6 +679,97 @@ export function ProductDetail({ product }: { product: ProductDTO }) {
           </div>
         </div>
       </div>
+
+      {/* GSM Explanatory Dialog Modal */}
+      {showGsmModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => setShowGsmModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-zinc-200 text-zinc-900 space-y-4"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-800">
+                  <Info size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black uppercase tracking-tight text-zinc-900">
+                    Understanding Fabric Density (GSM)
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    Find your ideal streetwear drape & weight
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGsmModal(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-black hover:bg-zinc-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              <strong>GSM</strong> stands for <em>Grams per Square Meter</em>. It is the global standard metric measuring the density, thickness, and heft of the fabric. A higher GSM gives a more structured, boxy drape that holds its silhouette without clinging.
+            </p>
+
+            {/* 3 Tiers Detailed breakdown */}
+            <div className="space-y-2.5 pt-1">
+              {GSM_CONFIGS.map((opt) => (
+                <div
+                  key={opt.id}
+                  className={`p-3 rounded-xl border text-xs transition-all ${
+                    selectedGsm.id === opt.id
+                      ? "border-zinc-900 bg-zinc-50 shadow-xs ring-1 ring-zinc-900/10"
+                      : "border-zinc-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-sm text-zinc-900">
+                        {opt.name}
+                      </span>
+                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-zinc-200 text-zinc-800">
+                        {opt.gsm} GSM
+                      </span>
+                      {opt.badge && (
+                        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          {opt.badge}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-black text-zinc-900">
+                      {formatInr(Math.max(0, sale + opt.priceOffset))}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">
+                    {opt.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer CTA */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowGsmModal(false)}
+                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-zinc-900 hover:bg-black transition-colors cursor-pointer shadow-md"
+              >
+                Got It, Continue Shopping
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

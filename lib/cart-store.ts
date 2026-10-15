@@ -13,6 +13,7 @@ export type CartItem = {
   size: Size;
   qty: number;
   maxStock: number;
+  gsm?: string;
 };
 
 export type WishlistItem = {
@@ -35,8 +36,8 @@ type ShopState = {
   openWishlist: () => void;
   closeWishlist: () => void;
   addToCart: (item: CartItem) => void;
-  setQty: (productId: string, size: Size, qty: number) => void;
-  removeFromCart: (productId: string, size: Size) => void;
+  setQty: (productId: string, size: Size, qty: number, gsm?: string) => void;
+  removeFromCart: (productId: string, size: Size, gsm?: string) => void;
   clearCart: () => void;
   toggleWishlist: (item: WishlistItem) => void;
 };
@@ -57,13 +58,18 @@ export const useShop = create<ShopState>()(
       addToCart: (item) => {
         if (item.maxStock <= 0 || item.qty <= 0) return;
         const existing = get().cart.find(
-          (i) => i.productId === item.productId && i.size === item.size,
+          (i) =>
+            i.productId === item.productId &&
+            i.size === item.size &&
+            (i.gsm || "") === (item.gsm || ""),
         );
         if (existing) {
           set({
             bagOpen: true,
             cart: get().cart.map((i) =>
-              i.productId === item.productId && i.size === item.size
+              i.productId === item.productId &&
+              i.size === item.size &&
+              (i.gsm || "") === (item.gsm || "")
                 ? {
                     ...i,
                     maxStock: item.maxStock,
@@ -82,21 +88,28 @@ export const useShop = create<ShopState>()(
           });
         }
       },
-      setQty: (productId, size, qty) => {
+      setQty: (productId, size, qty, gsm) => {
         set({
           cart: get()
             .cart.map((i) =>
-              i.productId === productId && i.size === size
+              i.productId === productId &&
+              i.size === size &&
+              (gsm === undefined || (i.gsm || "") === (gsm || ""))
                 ? { ...i, qty: Math.min(Math.max(qty, 0), i.maxStock) }
                 : i,
             )
             .filter((i) => i.qty > 0),
         });
       },
-      removeFromCart: (productId, size) =>
+      removeFromCart: (productId, size, gsm) =>
         set({
           cart: get().cart.filter(
-            (i) => !(i.productId === productId && i.size === size),
+            (i) =>
+              !(
+                i.productId === productId &&
+                i.size === size &&
+                (gsm === undefined || (i.gsm || "") === (gsm || ""))
+              ),
           ),
         }),
       clearCart: () => set({ cart: [] }),
@@ -126,10 +139,10 @@ export const useShop = create<ShopState>()(
  */
 export const shopActions = {
   addToCart: (item: CartItem) => useShop.getState().addToCart(item),
-  setQty: (productId: string, size: Size, qty: number) =>
-    useShop.getState().setQty(productId, size, qty),
-  removeFromCart: (productId: string, size: Size) =>
-    useShop.getState().removeFromCart(productId, size),
+  setQty: (productId: string, size: Size, qty: number, gsm?: string) =>
+    useShop.getState().setQty(productId, size, qty, gsm),
+  removeFromCart: (productId: string, size: Size, gsm?: string) =>
+    useShop.getState().removeFromCart(productId, size, gsm),
   clearCart: () => useShop.getState().clearCart(),
   toggleWishlist: (item: WishlistItem) =>
     useShop.getState().toggleWishlist(item),
